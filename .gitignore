@@ -361,3 +361,44 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# Python
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+.venv/
+venv/
+env/
+.env
+.env.*
+!.env.example
+!backend/.env.example
+!frontend/.env.example
+
+# Alembic compiled
+backend/alembic/versions/*.pyc
+
+# Node / Frontend
+node_modules/
+.npm
+npm-debug.log*
+frontend/dist/
+frontend/.env
+frontend/.env.*
+!frontend/.env.example
+
+# Testing
+.pytest_cache/
+htmlcov/
+.coverage
+coverage.xml
+
+# Celery
+celerybeat-schedule
+celerybeat.pid

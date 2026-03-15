@@ -1,0 +1,117 @@
+import { addDays, format } from "date-fns";
+import { useState } from "react";
+import AlertFeed from "../components/AlertFeed";
+import MetricCard from "../components/MetricCard";
+import PriceChart from "../components/PriceChart";
+import RateTable from "../components/RateTable";
+import { useAuth } from "../contexts/AuthContext";
+import { useComparison, useHistory } from "../hooks/useRates";
+import { alertsApi } from "../api/alerts";
+import { useEffect } from "react";
+import type { AlertLog } from "../types";
+
+export default function Dashboard() {
+  const { user } = useAuth();
+  const today = new Date();
+  const [checkIn] = useState(today);
+  const [checkOut] = useState(addDays(today, 1));
+
+  const { data: comparison, isLoading: loadingComparison } = useComparison(checkIn, checkOut);
+  const ownHotel = comparison.find((r) => r.is_own_hotel);
+  const { data: history, isLoading: loadingHistory } = useHistory(
+    ownHotel?.hotel_key ?? "",
+    30
+  );
+
+  const [alertLogs, setAlertLogs] = useState<AlertLog[]>([]);
+  useEffect(() => {
+    alertsApi.getLogs(1, 10).then(({ data }) => setAlertLogs(data));
+  }, []);
+
+  const unreadCount = alertLogs.filter((a) => !a.is_read).length;
+  const ownRank = ownHotel?.rank ?? null;
+  const ownMin = ownHotel?.min_price;
+  const lowestComp = comparison
+    .filter((r) => !r.is_own_hotel && r.min_price != null)
+    .sort((a, b) => Number(a.min_price) - Number(b.min_price))[0];
+
+  return (
+    <div className="space-y-8">
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900">
+          Buongiorno{user?.full_name ? `, ${user.full_name.split(" ")[0]}` : ""}
+        </h1>
+        <p className="text-gray-500 text-sm mt-1">
+          Prezzi per {format(checkIn, "dd/MM/yyyy")} — {format(checkOut, "dd/MM/yyyy")}
+        </p>
+      </div>
+
+      {/* Metric cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <MetricCard
+          label="Tuo prezzo min"
+          value={ownMin != null ? `€${Number(ownMin).toFixed(0)}` : "—"}
+          accent="teal"
+        />
+        <MetricCard
+          label="Posizione"
+          value={ownRank != null ? `#${ownRank}` : "—"}
+          sub={`su ${comparison.length} hotel`}
+          accent={ownRank === 1 ? "teal" : ownRank != null && ownRank <= 3 ? "coral" : "danger"}
+        />
+        <MetricCard
+          label="Competitor più economico"
+          value={
+            lowestComp?.min_price != null
+              ? `€${Number(lowestComp.min_price).toFixed(0)}`
+              : "—"
+          }
+          sub={lowestComp?.hotel_name}
+          accent="neutral"
+        />
+        <MetricCard
+          label="Alert non letti"
+          value={unreadCount}
+          accent={unreadCount > 0 ? "danger" : "teal"}
+        />
+      </div>
+
+      {/* Rate table */}
+      <div>
+        <h2 className="text-base font-semibold text-gray-800 mb-3">
+          Confronto prezzi OTA
+        </h2>
+        {loadingComparison ? (
+          <div className="text-center py-8 text-gray-400">Caricamento...</div>
+        ) : (
+          <RateTable rows={comparison} />
+        )}
+      </div>
+
+      {/* Chart + alerts side by side */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2">
+          <h2 className="text-base font-semibold text-gray-800 mb-3">
+            Storico prezzi (30 giorni)
+          </h2>
+          <div className="bg-white rounded-[14px] border border-gray-200 p-4">
+            <PriceChart data={history} isLoading={loadingHistory} />
+          </div>
+        </div>
+        <div>
+          <h2 className="text-base font-semibold text-gray-800 mb-3">
+            Ultimi alert
+          </h2>
+          <AlertFeed
+            logs={alertLogs}
+            onRead={(id) =>
+              setAlertLogs((prev) =>
+                prev.map((a) => (a.id === id ? { ...a, is_read: true } : a))
+              )
+            }
+          />
+        </div>
+      </div>
+    </div>
+  );
+}

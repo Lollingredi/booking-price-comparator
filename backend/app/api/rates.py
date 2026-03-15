@@ -1,0 +1,175 @@
+from datetime import date, timedelta
+from decimal import Decimal
+
+from fastapi import APIRouter, HTTPException, Query
+from sqlalchemy import func, select
+
+from app.api.deps import CurrentUser, DB
+from app.models.hotel import Hotel, HotelCompetitor
+from app.models.rate import RateSnapshot
+from app.schemas.rate import ComparisonRow, HistoryPoint, HotelRates, RateSnapshotOut
+from app.services.rate_fetcher import fetch_rates_if_stale
+
+router = APIRouter()
+
+
+@router.get("/current", response_model=list[HotelRates])
+async def get_current_rates(
+    current_user: CurrentUser,
+    db: DB,
+    check_in: date = Query(...),
+    check_out: date = Query(...),
+):
+    result = await db.execute(select(Hotel).where(Hotel.user_id == current_user.id))
+    hotel = result.scalar_one_or_none()
+    if not hotel:
+        raise HTTPException(status_code=404, detail="Hotel not configured.")
+
+    response: list[HotelRates] = []
+
+    own_snapshots = await fetch_rates_if_stale(db, hotel.xotelo_hotel_key, check_in, check_out)
+    response.append(
+        HotelRates(
+            hotel_key=hotel.xotelo_hotel_key,
+            hotel_name=hotel.name,
+            is_own_hotel=True,
+            rates=[RateSnapshotOut.model_validate(s) for s in own_snapshots],
+        )
+    )
+
+    comps_result = await db.execute(
+        select(HotelCompetitor).where(
+            HotelCompetitor.hotel_id == hotel.id,
+            HotelCompetitor.is_active == True,
+        )
+    )
+    competitors = comps_result.scalars().all()
+
+    for comp in competitors:
+        snapshots = await fetch_rates_if_stale(db, comp.competitor_xotelo_key, check_in, check_out)
+        response.append(
+            HotelRates(
+                hotel_key=comp.competitor_xotelo_key,
+                hotel_name=comp.competitor_name,
+                is_own_hotel=False,
+                rates=[RateSnapshotOut.model_validate(s) for s in snapshots],
+            )
+        )
+
+    return response
+
+
+@router.get("/history", response_model=list[HistoryPoint])
+async def get_history(
+    current_user: CurrentUser,
+    db: DB,
+    hotel_key: str = Query(...),
+    days: int = Query(default=30, ge=1, le=365),
+):
+    since = date.today() - timedelta(days=days)
+
+    result = await db.execute(
+        select(
+            RateSnapshot.check_in_date,
+            RateSnapshot.ota_code,
+            RateSnapshot.ota_name,
+            func.min(RateSnapshot.price).label("min_price"),
+        )
+        .where(
+            RateSnapshot.hotel_xotelo_key == hotel_key,
+            RateSnapshot.check_in_date >= since,
+        )
+        .group_by(
+            RateSnapshot.check_in_date,
+            RateSnapshot.ota_code,
+            RateSnapshot.ota_name,
+        )
+        .order_by(RateSnapshot.check_in_date)
+    )
+
+    return [
+        HistoryPoint(
+            date=row.check_in_date,
+            ota_code=row.ota_code,
+            ota_name=row.ota_name,
+            min_price=row.min_price,
+        )
+        for row in result.all()
+    ]
+
+
+@router.get("/comparison", response_model=list[ComparisonRow])
+async def get_comparison(
+    current_user: CurrentUser,
+    db: DB,
+    check_in: date = Query(...),
+    check_out: date = Query(...),
+):
+    result = await db.execute(select(Hotel).where(Hotel.user_id == current_user.id))
+    hotel = result.scalar_one_or_none()
+    if not hotel:
+        raise HTTPException(status_code=404, detail="Hotel not configured.")
+
+    comps_result = await db.execute(
+        select(HotelCompetitor).where(
+            HotelCompetitor.hotel_id == hotel.id,
+            HotelCompetitor.is_active == True,
+        )
+    )
+    competitors = comps_result.scalars().all()
+
+    all_hotels = [(hotel.xotelo_hotel_key, hotel.name, True)] + [
+        (c.competitor_xotelo_key, c.competitor_name, False) for c in competitors
+    ]
+
+    # Collect all OTA codes
+    all_ota_codes: set[str] = set()
+    hotel_rate_maps: dict[str, dict[str, Decimal]] = {}
+
+    for key, name, is_own in all_hotels:
+        snaps_result = await db.execute(
+            select(RateSnapshot)
+            .where(
+                RateSnapshot.hotel_xotelo_key == key,
+                RateSnapshot.check_in_date == check_in,
+                RateSnapshot.check_out_date == check_out,
+            )
+            .order_by(RateSnapshot.fetched_at.desc())
+        )
+        snaps = snaps_result.scalars().all()
+        rate_map: dict[str, Decimal] = {}
+        for s in snaps:
+            if s.ota_code not in rate_map:
+                rate_map[s.ota_code] = s.price
+            all_ota_codes.add(s.ota_code)
+        hotel_rate_maps[key] = rate_map
+
+    rows: list[ComparisonRow] = []
+    for key, name, is_own in all_hotels:
+        rate_map = hotel_rate_maps.get(key, {})
+        ota_prices: dict[str, Decimal | None] = {
+            ota: rate_map.get(ota) for ota in all_ota_codes
+        }
+        prices_with_values = [p for p in ota_prices.values() if p is not None]
+        min_price = min(prices_with_values) if prices_with_values else None
+        rows.append(
+            ComparisonRow(
+                hotel_key=key,
+                hotel_name=name,
+                is_own_hotel=is_own,
+                ota_prices=ota_prices,
+                min_price=min_price,
+                rank=0,
+            )
+        )
+
+    # Rank by min price
+    sortable = [r for r in rows if r.min_price is not None]
+    sortable.sort(key=lambda r: r.min_price)
+    for i, r in enumerate(sortable, 1):
+        r.rank = i
+    no_price = [r for r in rows if r.min_price is None]
+    for r in no_price:
+        r.rank = len(sortable) + 1
+
+    return rows
