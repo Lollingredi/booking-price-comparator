@@ -18,10 +18,13 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    # Enums
-    op.execute("CREATE TYPE plan_enum AS ENUM ('free', 'basic', 'pro')")
-    op.execute("CREATE TYPE rule_type_enum AS ENUM ('competitor_price_drop', 'parity_issue', 'undercut')")
-    op.execute("CREATE TYPE severity_enum AS ENUM ('info', 'warning', 'danger')")
+    plan_enum = postgresql.ENUM("free", "basic", "pro", name="plan_enum", create_type=False)
+    rule_type_enum = postgresql.ENUM("competitor_price_drop", "parity_issue", "undercut", name="rule_type_enum", create_type=False)
+    severity_enum = postgresql.ENUM("info", "warning", "danger", name="severity_enum", create_type=False)
+
+    plan_enum.create(op.get_bind(), checkfirst=True)
+    rule_type_enum.create(op.get_bind(), checkfirst=True)
+    severity_enum.create(op.get_bind(), checkfirst=True)
 
     op.create_table(
         "users",
@@ -30,7 +33,7 @@ def upgrade() -> None:
         sa.Column("hashed_password", sa.String(255), nullable=False),
         sa.Column("full_name", sa.String(255), nullable=False),
         sa.Column("is_active", sa.Boolean(), nullable=False, server_default="true"),
-        sa.Column("plan", sa.Enum("free", "basic", "pro", name="plan_enum"), nullable=False, server_default="free"),
+        sa.Column("plan", plan_enum, nullable=False, server_default="free"),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.text("now()")),
         sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.text("now()")),
     )
@@ -80,7 +83,7 @@ def upgrade() -> None:
         "alert_rules",
         sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True),
         sa.Column("user_id", postgresql.UUID(as_uuid=True), sa.ForeignKey("users.id", ondelete="CASCADE"), nullable=False),
-        sa.Column("rule_type", sa.Enum("competitor_price_drop", "parity_issue", "undercut", name="rule_type_enum"), nullable=False),
+        sa.Column("rule_type", rule_type_enum, nullable=False),
         sa.Column("threshold_value", sa.Numeric(10, 2), nullable=False),
         sa.Column("is_active", sa.Boolean(), nullable=False, server_default="true"),
         sa.Column("notify_email", sa.Boolean(), nullable=False, server_default="true"),
@@ -95,7 +98,7 @@ def upgrade() -> None:
         sa.Column("user_id", postgresql.UUID(as_uuid=True), sa.ForeignKey("users.id", ondelete="CASCADE"), nullable=False),
         sa.Column("alert_rule_id", postgresql.UUID(as_uuid=True), sa.ForeignKey("alert_rules.id", ondelete="CASCADE"), nullable=False),
         sa.Column("message", sa.Text(), nullable=False),
-        sa.Column("severity", sa.Enum("info", "warning", "danger", name="severity_enum"), nullable=False, server_default="info"),
+        sa.Column("severity", severity_enum, nullable=False, server_default="info"),
         sa.Column("is_read", sa.Boolean(), nullable=False, server_default="false"),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.text("now()")),
     )
