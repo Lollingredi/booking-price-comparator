@@ -2,11 +2,15 @@ import asyncio
 import os
 from logging.config import fileConfig
 
+from dotenv import load_dotenv
 from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from alembic import context
+
+# Load .env file so DATABASE_URL is available
+load_dotenv()
 
 # Import all models so Alembic can detect them
 from app.database import Base
