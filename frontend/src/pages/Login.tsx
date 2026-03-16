@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 
 export default function Login() {
-  const { login } = useAuth();
+  const { login, loginDemo } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -22,6 +22,11 @@ export default function Login() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleDemo = () => {
+    loginDemo();
+    navigate("/dashboard");
   };
 
   return (
@@ -75,6 +80,22 @@ export default function Login() {
             </Link>
           </p>
         </form>
+
+        {/* Demo CTA */}
+        <div className="mt-4 bg-amber-50 border border-amber-200 rounded-[14px] p-4 text-center">
+          <p className="text-sm text-amber-800 font-medium mb-1">
+            Vuoi esplorare senza registrarti?
+          </p>
+          <p className="text-xs text-amber-600 mb-3">
+            Accedi con dati dimostrativi — nessun account necessario
+          </p>
+          <button
+            onClick={handleDemo}
+            className="w-full bg-amber-500 hover:bg-amber-600 text-white font-medium py-2 rounded-lg text-sm transition-colors"
+          >
+            Prova la demo →
+          </button>
+        </div>
       </div>
     </div>
   );

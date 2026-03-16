@@ -1,14 +1,21 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { ratesApi } from "../api/rates";
 import type { ComparisonRow, HistoryPoint, HotelRates } from "../types";
 import { format } from "date-fns";
+import { useAuth } from "../contexts/AuthContext";
+import {
+  DEMO_COMPARISON,
+  generateDemoHistory,
+} from "../demo/demoData";
 
 export function useCurrentRates(checkIn: Date, checkOut: Date) {
+  const { isDemoMode } = useAuth();
   const [data, setData] = useState<HotelRates[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const fetch = useCallback(async () => {
+    if (isDemoMode) return;
     setIsLoading(true);
     setError(null);
     try {
@@ -22,7 +29,7 @@ export function useCurrentRates(checkIn: Date, checkOut: Date) {
     } finally {
       setIsLoading(false);
     }
-  }, [checkIn, checkOut]);
+  }, [checkIn, checkOut, isDemoMode]);
 
   useEffect(() => {
     fetch();
@@ -32,11 +39,16 @@ export function useCurrentRates(checkIn: Date, checkOut: Date) {
 }
 
 export function useComparison(checkIn: Date, checkOut: Date) {
+  const { isDemoMode } = useAuth();
   const [data, setData] = useState<ComparisonRow[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const fetch = useCallback(async () => {
+    if (isDemoMode) {
+      setData(DEMO_COMPARISON);
+      return;
+    }
     setIsLoading(true);
     setError(null);
     try {
@@ -50,7 +62,7 @@ export function useComparison(checkIn: Date, checkOut: Date) {
     } finally {
       setIsLoading(false);
     }
-  }, [checkIn, checkOut]);
+  }, [checkIn, checkOut, isDemoMode]);
 
   useEffect(() => {
     fetch();
@@ -60,11 +72,17 @@ export function useComparison(checkIn: Date, checkOut: Date) {
 }
 
 export function useHistory(hotelKey: string, days = 30) {
+  const { isDemoMode } = useAuth();
+  const demoHistory = useMemo(() => generateDemoHistory(), []);
   const [data, setData] = useState<HistoryPoint[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const fetch = useCallback(async () => {
+    if (isDemoMode) {
+      setData(demoHistory);
+      return;
+    }
     if (!hotelKey) return;
     setIsLoading(true);
     setError(null);
@@ -76,7 +94,7 @@ export function useHistory(hotelKey: string, days = 30) {
     } finally {
       setIsLoading(false);
     }
-  }, [hotelKey, days]);
+  }, [hotelKey, days, isDemoMode, demoHistory]);
 
   useEffect(() => {
     fetch();

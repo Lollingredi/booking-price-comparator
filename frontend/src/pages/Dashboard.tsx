@@ -1,5 +1,5 @@
 import { addDays, format } from "date-fns";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import AlertFeed from "../components/AlertFeed";
 import MetricCard from "../components/MetricCard";
 import PriceChart from "../components/PriceChart";
@@ -7,11 +7,11 @@ import RateTable from "../components/RateTable";
 import { useAuth } from "../contexts/AuthContext";
 import { useComparison, useHistory } from "../hooks/useRates";
 import { alertsApi } from "../api/alerts";
-import { useEffect } from "react";
 import type { AlertLog } from "../types";
+import { DEMO_ALERT_LOGS } from "../demo/demoData";
 
 export default function Dashboard() {
-  const { user } = useAuth();
+  const { user, isDemoMode } = useAuth();
   const today = new Date();
   const [checkIn] = useState(today);
   const [checkOut] = useState(addDays(today, 1));
@@ -25,8 +25,12 @@ export default function Dashboard() {
 
   const [alertLogs, setAlertLogs] = useState<AlertLog[]>([]);
   useEffect(() => {
+    if (isDemoMode) {
+      setAlertLogs(DEMO_ALERT_LOGS);
+      return;
+    }
     alertsApi.getLogs(1, 10).then(({ data }) => setAlertLogs(data));
-  }, []);
+  }, [isDemoMode]);
 
   const unreadCount = alertLogs.filter((a) => !a.is_read).length;
   const ownRank = ownHotel?.rank ?? null;

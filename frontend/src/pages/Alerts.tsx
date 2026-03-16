@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import AlertFeed from "../components/AlertFeed";
 import { alertsApi } from "../api/alerts";
 import type { AlertLog, AlertRule } from "../types";
+import { useAuth } from "../contexts/AuthContext";
+import { DEMO_ALERT_LOGS, DEMO_ALERT_RULES } from "../demo/demoData";
 
 const RULE_TYPE_LABELS: Record<string, string> = {
   competitor_price_drop: "Calo prezzo competitor",
@@ -10,6 +12,7 @@ const RULE_TYPE_LABELS: Record<string, string> = {
 };
 
 export default function Alerts() {
+  const { isDemoMode } = useAuth();
   const [rules, setRules] = useState<AlertRule[]>([]);
   const [logs, setLogs] = useState<AlertLog[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -21,25 +24,46 @@ export default function Alerts() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (isDemoMode) {
+      setRules(DEMO_ALERT_RULES);
+      setLogs(DEMO_ALERT_LOGS);
+      setIsLoading(false);
+      return;
+    }
     Promise.all([alertsApi.listRules(), alertsApi.getLogs()])
       .then(([rulesRes, logsRes]) => {
         setRules(rulesRes.data);
         setLogs(logsRes.data);
       })
       .finally(() => setIsLoading(false));
-  }, []);
+  }, [isDemoMode]);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
     setError(null);
     try {
-      const { data } = await alertsApi.createRule({
-        rule_type: ruleType,
-        threshold_value: threshold,
-        notify_email: notifyEmail,
-      });
-      setRules((prev) => [...prev, data]);
+      if (isDemoMode) {
+        // In demo mode, add a fake rule locally
+        const fakeRule: AlertRule = {
+          id: `demo-rule-${Date.now()}`,
+          user_id: "demo-user-id",
+          rule_type: ruleType as AlertRule["rule_type"],
+          threshold_value: threshold,
+          is_active: true,
+          notify_email: notifyEmail,
+          notify_whatsapp: false,
+          created_at: new Date().toISOString(),
+        };
+        setRules((prev) => [...prev, fakeRule]);
+      } else {
+        const { data } = await alertsApi.createRule({
+          rule_type: ruleType,
+          threshold_value: threshold,
+          notify_email: notifyEmail,
+        });
+        setRules((prev) => [...prev, data]);
+      }
     } catch {
       setError("Errore nella creazione della regola.");
     } finally {
@@ -48,11 +72,21 @@ export default function Alerts() {
   };
 
   const handleToggle = async (rule: AlertRule) => {
+    if (isDemoMode) {
+      setRules((prev) =>
+        prev.map((r) => (r.id === rule.id ? { ...r, is_active: !r.is_active } : r))
+      );
+      return;
+    }
     const { data } = await alertsApi.updateRule(rule.id, { is_active: !rule.is_active });
     setRules((prev) => prev.map((r) => (r.id === data.id ? data : r)));
   };
 
   const handleDelete = async (id: string) => {
+    if (isDemoMode) {
+      setRules((prev) => prev.filter((r) => r.id !== id));
+      return;
+    }
     await alertsApi.deleteRule(id);
     setRules((prev) => prev.filter((r) => r.id !== id));
   };

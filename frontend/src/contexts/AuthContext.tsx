@@ -7,12 +7,15 @@ import React, {
 } from "react";
 import { authApi } from "../api/auth";
 import type { User } from "../types";
+import { DEMO_USER } from "../demo/demoData";
 
 interface AuthContextValue {
   user: User | null;
   isLoading: boolean;
+  isDemoMode: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, full_name: string) => Promise<void>;
+  loginDemo: () => void;
   logout: () => void;
 }
 
@@ -21,6 +24,7 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isDemoMode, setIsDemoMode] = useState(false);
 
   const fetchMe = useCallback(async () => {
     try {
@@ -54,14 +58,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await fetchMe();
   };
 
+  const loginDemo = useCallback(() => {
+    setUser(DEMO_USER);
+    setIsDemoMode(true);
+  }, []);
+
   const logout = useCallback(() => {
     localStorage.removeItem("access_token");
     localStorage.removeItem("refresh_token");
     setUser(null);
+    setIsDemoMode(false);
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, register, logout }}>
+    <AuthContext.Provider
+      value={{ user, isLoading, isDemoMode, login, register, loginDemo, logout }}
+    >
       {children}
     </AuthContext.Provider>
   );
