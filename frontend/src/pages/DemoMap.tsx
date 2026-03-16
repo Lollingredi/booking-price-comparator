@@ -1,6 +1,9 @@
 import "leaflet/dist/leaflet.css";
+import "leaflet.markercluster/dist/MarkerCluster.css";
+import "leaflet.markercluster/dist/MarkerCluster.Default.css";
 import L from "leaflet";
-import { MapContainer, TileLayer, Marker, Popup, Circle, useMap } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, Circle, Tooltip, useMap } from "react-leaflet";
+import MarkerClusterGroup from "@changey/react-leaflet-markercluster";
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
@@ -39,7 +42,7 @@ const ICONS = {
 function FlyTo({ hotel }: { hotel: ItalyHotel | null }) {
   const map = useMap();
   useEffect(() => {
-    if (hotel) map.flyTo([hotel.lat, hotel.lng], 13, { duration: 1.2 });
+    if (hotel) map.flyTo([hotel.lat, hotel.lng], 14, { duration: 1.2 });
   }, [hotel, map]);
   return null;
 }
@@ -51,6 +54,54 @@ function Stars({ n }: { n: number }) {
     <span className="text-amber-400 text-xs">
       {"★".repeat(n)}{"☆".repeat(5 - n)}
     </span>
+  );
+}
+
+// ─── Step progress banner ─────────────────────────────────────────────────────
+
+type StepState = "future" | "active" | "done";
+
+interface StepBannerProps {
+  hotelChosen: boolean;
+  competitorsChosen: boolean;
+}
+
+function StepBanner({ hotelChosen, competitorsChosen }: StepBannerProps) {
+  const s1: StepState = hotelChosen ? "done" : "active";
+  const s2: StepState = !hotelChosen ? "future" : competitorsChosen ? "done" : "active";
+  const s3: StepState = competitorsChosen ? "active" : "future";
+
+  function Chip({ n, label, state }: { n: number; label: string; state: StepState }) {
+    const circle =
+      state === "done"   ? "bg-teal-600 border-teal-600 text-white" :
+      state === "active" ? "bg-teal-600 border-teal-600 text-white ring-4 ring-teal-100" :
+                           "bg-white border-gray-300 text-gray-400";
+    const text =
+      state === "future" ? "text-gray-400" :
+      state === "active" ? "text-teal-700 font-semibold" : "text-teal-600";
+
+    return (
+      <div className="flex items-center gap-1.5">
+        <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center text-xs font-bold shrink-0 transition-all ${circle}`}>
+          {state === "done" ? "✓" : n}
+        </div>
+        <span className={`text-xs hidden sm:inline transition-colors ${text}`}>{label}</span>
+      </div>
+    );
+  }
+
+  function Arrow() {
+    return <span className="text-gray-300 text-sm mx-1 sm:mx-2">→</span>;
+  }
+
+  return (
+    <div className="bg-white border-b border-gray-200 px-4 py-2.5 flex items-center justify-center gap-1 shrink-0">
+      <Chip n={1} label="Scegli il tuo hotel"     state={s1} />
+      <Arrow />
+      <Chip n={2} label="Seleziona i competitor"  state={s2} />
+      <Arrow />
+      <Chip n={3} label="Inizia la demo"           state={s3} />
+    </div>
   );
 }
 
@@ -124,7 +175,7 @@ function HotelSearchBox({ onSelect }: { onSelect: (h: ItalyHotel) => void }) {
             position: "absolute", top: "100%", left: 0, right: 0, zIndex: 50,
             margin: 0, padding: 0, listStyle: "none", background: "white",
             border: "1px solid #E5E7EB", borderTop: "none", borderRadius: "0 0 8px 8px",
-            boxShadow: "0 8px 24px rgba(0,0,0,0.12)", maxHeight: 300, overflowY: "auto",
+            boxShadow: "0 8px 24px rgba(0,0,0,0.12)", maxHeight: 280, overflowY: "auto",
           }}
         >
           {suggestions.map((h, i) => (
@@ -156,9 +207,9 @@ function ComparisonTable({ selected, competitors }: { selected: ItalyHotel; comp
   const otaLabels: Record<string, string> = { booking: "Booking", expedia: "Expedia", hotels_com: "Hotels.com", agoda: "Agoda" };
 
   return (
-    <div className="overflow-x-auto">
+    <div className="overflow-auto max-h-[220px]">
       <table className="w-full text-xs border-collapse">
-        <thead>
+        <thead className="sticky top-0">
           <tr className="bg-gray-50">
             <th className="text-left px-2 py-1.5 text-gray-600 font-medium border-b border-gray-200">Hotel</th>
             {otas.map((ota) => (
@@ -171,7 +222,7 @@ function ComparisonTable({ selected, competitors }: { selected: ItalyHotel; comp
         <tbody>
           {rows.map((row) => (
             <tr key={row.hotel_key} className={row.is_own_hotel ? "bg-teal-50" : "hover:bg-gray-50"}>
-              <td className="px-2 py-1.5 border-b border-gray-100 max-w-[130px]">
+              <td className="px-2 py-1.5 border-b border-gray-100 max-w-[120px]">
                 <span className="truncate block text-gray-800 font-medium">
                   {row.is_own_hotel
                     ? <span className="inline-flex items-center gap-1"><span className="bg-teal-600 text-white text-[10px] px-1 py-0.5 rounded font-bold">Tu</span>{row.hotel_name}</span>
@@ -203,10 +254,10 @@ export default function DemoMap() {
   const { loginDemo } = useAuth();
   const navigate      = useNavigate();
 
-  const [selected, setSelected]                     = useState<ItalyHotel | null>(null);
+  const [selected, setSelected]                           = useState<ItalyHotel | null>(null);
   const [selectedCompetitorIds, setSelectedCompetitorIds] = useState<Set<string>>(new Set());
+  const [mobileView, setMobileView]                       = useState<"map" | "list">("map");
 
-  // All hotels within 20km of the chosen hotel
   const allCompetitors = useMemo(
     () => (selected ? getCompetitorsWithin20km(selected) : []),
     [selected]
@@ -219,7 +270,6 @@ export default function DemoMap() {
     setSelectedCompetitorIds(new Set(comps.map((c) => c.id)));
   }, [selected]);
 
-  // Only the competitors the user has checked
   const checkedCompetitors = useMemo(
     () => allCompetitors.filter((c) => selectedCompetitorIds.has(c.id)),
     [allCompetitors, selectedCompetitorIds]
@@ -239,6 +289,11 @@ export default function DemoMap() {
     } else {
       setSelectedCompetitorIds(new Set(allCompetitors.map((c) => c.id)));
     }
+  };
+
+  const handleSelectHotel = (hotel: ItalyHotel) => {
+    setSelected(hotel);
+    setMobileView("list"); // auto-switch to list on mobile after selecting
   };
 
   const handleStart = () => {
@@ -264,16 +319,42 @@ export default function DemoMap() {
         </button>
       </header>
 
-      {/* Banner */}
-      <div className="bg-amber-50 border-b border-amber-200 px-4 py-2 text-center text-sm text-amber-800 shrink-0">
-        <strong>1. Scegli il tuo hotel</strong> &nbsp;→&nbsp; <strong>2. Seleziona i competitor</strong> &nbsp;→&nbsp; <strong>3. Inizia la demo</strong>
+      {/* Step progress banner */}
+      <StepBanner
+        hotelChosen={!!selected}
+        competitorsChosen={!!selected && checkedCompetitors.length > 0}
+      />
+
+      {/* Mobile tab bar — only on <lg */}
+      <div className="lg:hidden flex shrink-0 bg-white border-b border-gray-200">
+        <button
+          onClick={() => setMobileView("map")}
+          className={`flex-1 py-2.5 text-sm font-medium transition-colors ${
+            mobileView === "map"
+              ? "text-teal-600 border-b-2 border-teal-600"
+              : "text-gray-500 hover:text-gray-700"
+          }`}
+        >
+          🗺 Mappa
+        </button>
+        <button
+          onClick={() => setMobileView("list")}
+          className={`flex-1 py-2.5 text-sm font-medium transition-colors ${
+            mobileView === "list"
+              ? "text-teal-600 border-b-2 border-teal-600"
+              : "text-gray-500 hover:text-gray-700"
+          }`}
+        >
+          ☰ Lista{selected ? ` · ${checkedCompetitors.length} sel.` : ""}
+        </button>
       </div>
 
       {/* Body */}
       <div className="flex flex-col lg:flex-row flex-1 overflow-hidden">
 
         {/* MAP */}
-        <div className="flex-1 min-h-[50vh] lg:min-h-0 relative">
+        <div className={`flex-1 min-h-0 relative ${mobileView === "list" ? "hidden lg:block" : "block"}`}
+             style={{ minHeight: mobileView === "map" ? "calc(100vh - 140px)" : undefined }}>
           <MapContainer center={[44.55, 11.42]} zoom={10} style={{ height: "100%", width: "100%", minHeight: "400px" }}>
             <TileLayer
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
@@ -285,62 +366,83 @@ export default function DemoMap() {
               <Circle
                 center={[selected.lat, selected.lng]}
                 radius={20000}
-                pathOptions={{ color: "#0D9488", fillColor: "#0D9488", fillOpacity: 0.06, weight: 1.5 }}
+                pathOptions={{ color: "#0D9488", fillColor: "#0D9488", fillOpacity: 0.05, weight: 1.5, dashArray: "6 4" }}
               />
             )}
 
-            {ITALY_HOTELS.map((hotel) => {
-              const isMyHotel  = selected?.id === hotel.id;
-              const isInRange  = !isMyHotel && allCompetitors.some((c) => c.id === hotel.id);
-              const isChecked  = isInRange && selectedCompetitorIds.has(hotel.id);
-              const icon = isMyHotel  ? ICONS.selected
-                         : isChecked  ? ICONS.competitor_checked
-                         : isInRange  ? ICONS.competitor_unchecked
-                         :              ICONS.default;
-              return (
-                <Marker key={hotel.id} position={[hotel.lat, hotel.lng]} icon={icon}
-                  eventHandlers={{ click: () => { if (!isInRange) setSelected(hotel); else toggleCompetitor(hotel.id); } }}>
-                  <Popup>
-                    <div style={{ minWidth: 160 }}>
-                      <p style={{ fontWeight: 700, fontSize: 13 }}>{hotel.name}</p>
-                      <p style={{ fontSize: 11, color: "#6B7280" }}>{hotel.city}</p>
-                      <p style={{ fontSize: 11, color: "#F59E0B" }}>{"★".repeat(hotel.stars)}</p>
-                      <p style={{ fontSize: 12, color: "#0D9488", fontWeight: 600 }}>da €{hotel.basePrice}/notte</p>
-                      {!isInRange && (
-                        <button
-                          onClick={() => setSelected(hotel)}
-                          style={{ marginTop: 6, width: "100%", background: "#0D9488", color: "white", border: "none", borderRadius: 6, padding: "4px 8px", fontSize: 11, cursor: "pointer" }}
-                        >
-                          Usa come mio hotel
-                        </button>
-                      )}
-                      {isInRange && (
-                        <button
-                          onClick={() => toggleCompetitor(hotel.id)}
-                          style={{ marginTop: 6, width: "100%", background: isChecked ? "#F59E0B" : "#E5E7EB", color: isChecked ? "white" : "#374151", border: "none", borderRadius: 6, padding: "4px 8px", fontSize: 11, cursor: "pointer" }}
-                        >
-                          {isChecked ? "✓ Incluso nel confronto" : "+ Aggiungi al confronto"}
-                        </button>
-                      )}
-                    </div>
-                  </Popup>
-                </Marker>
-              );
-            })}
+            <MarkerClusterGroup
+              chunkedLoading
+              showCoverageOnHover={false}
+              maxClusterRadius={40}
+            >
+              {ITALY_HOTELS.map((hotel) => {
+                const isMyHotel  = selected?.id === hotel.id;
+                const isInRange  = !isMyHotel && allCompetitors.some((c) => c.id === hotel.id);
+                const isChecked  = isInRange && selectedCompetitorIds.has(hotel.id);
+                const icon = isMyHotel  ? ICONS.selected
+                           : isChecked  ? ICONS.competitor_checked
+                           : isInRange  ? ICONS.competitor_unchecked
+                           :              ICONS.default;
+                return (
+                  <Marker
+                    key={hotel.id}
+                    position={[hotel.lat, hotel.lng]}
+                    icon={icon}
+                    eventHandlers={{
+                      click: () => {
+                        if (!isInRange) handleSelectHotel(hotel);
+                        else toggleCompetitor(hotel.id);
+                      },
+                    }}
+                  >
+                    <Tooltip sticky offset={[10, 0]}>
+                      <span style={{ fontSize: 12, fontWeight: 600 }}>{hotel.name}</span>
+                      <br />
+                      <span style={{ fontSize: 11, color: "#6B7280" }}>
+                        {hotel.city} · {"★".repeat(hotel.stars)} · €{hotel.basePrice}
+                      </span>
+                    </Tooltip>
+                    <Popup>
+                      <div style={{ minWidth: 170 }}>
+                        <p style={{ fontWeight: 700, fontSize: 13 }}>{hotel.name}</p>
+                        <p style={{ fontSize: 11, color: "#6B7280" }}>{hotel.city}</p>
+                        <p style={{ fontSize: 11, color: "#F59E0B" }}>{"★".repeat(hotel.stars)}</p>
+                        <p style={{ fontSize: 12, color: "#0D9488", fontWeight: 600 }}>da €{hotel.basePrice}/notte</p>
+                        {!isInRange ? (
+                          <button
+                            onClick={() => handleSelectHotel(hotel)}
+                            style={{ marginTop: 6, width: "100%", background: "#0D9488", color: "white", border: "none", borderRadius: 6, padding: "5px 8px", fontSize: 11, cursor: "pointer", fontWeight: 600 }}
+                          >
+                            Usa come mio hotel
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => toggleCompetitor(hotel.id)}
+                            style={{ marginTop: 6, width: "100%", background: isChecked ? "#F59E0B" : "#E5E7EB", color: isChecked ? "white" : "#374151", border: "none", borderRadius: 6, padding: "5px 8px", fontSize: 11, cursor: "pointer", fontWeight: 600 }}
+                          >
+                            {isChecked ? "✓ Incluso nel confronto" : "+ Aggiungi al confronto"}
+                          </button>
+                        )}
+                      </div>
+                    </Popup>
+                  </Marker>
+                );
+              })}
+            </MarkerClusterGroup>
           </MapContainer>
         </div>
 
         {/* SIDE PANEL */}
-        <aside className="w-full lg:w-[420px] shrink-0 bg-white border-t lg:border-t-0 lg:border-l border-gray-200 flex flex-col overflow-y-auto">
+        <aside className={`w-full lg:w-[420px] shrink-0 bg-white border-t lg:border-t-0 lg:border-l border-gray-200 flex flex-col overflow-hidden ${mobileView === "map" ? "hidden lg:flex" : "flex"}`}>
 
           {/* Search bar */}
-          <div className="p-3 border-b border-gray-100">
-            <HotelSearchBox onSelect={setSelected} />
+          <div className="p-3 border-b border-gray-100 shrink-0">
+            <HotelSearchBox onSelect={handleSelectHotel} />
           </div>
 
           {!selected ? (
             /* Empty state */
-            <div className="flex flex-col items-center justify-center h-full py-16 px-6 text-center">
+            <div className="flex flex-col items-center justify-center flex-1 py-12 px-6 text-center overflow-y-auto">
               <div className="text-5xl mb-4">🗺️</div>
               <h2 className="text-lg font-semibold text-gray-700 mb-2">Scegli il tuo hotel</h2>
               <p className="text-sm text-gray-500 max-w-xs">
@@ -350,111 +452,113 @@ export default function DemoMap() {
               <div className="mt-6 flex flex-col gap-2 text-xs text-gray-400 text-left">
                 <div className="flex items-center gap-2"><span className="w-4 h-4 rounded-full bg-teal-500 shrink-0"></span>Il tuo hotel</div>
                 <div className="flex items-center gap-2"><span className="w-4 h-4 rounded-full bg-amber-400 shrink-0"></span>Competitor selezionato</div>
-                <div className="flex items-center gap-2"><span className="w-4 h-4 rounded-full border-2 border-amber-400 bg-gray-200 shrink-0"></span>Competitor non selezionato</div>
+                <div className="flex items-center gap-2"><span className="w-4 h-4 rounded-full border-2 border-amber-400 bg-gray-200 shrink-0"></span>Competitor non incluso</div>
                 <div className="flex items-center gap-2"><span className="w-4 h-4 rounded-full bg-gray-400 shrink-0"></span>Altri hotel</div>
               </div>
             </div>
           ) : (
-            <div className="p-4 flex flex-col gap-4">
+            /* Hotel selected — scrollable content + sticky CTA */
+            <div className="flex flex-col flex-1 overflow-hidden">
+              <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4 pb-24">
 
-              {/* ── Mio hotel ── */}
-              <div className="bg-teal-50 border border-teal-200 rounded-xl p-4">
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <p className="text-xs font-medium text-teal-600 uppercase tracking-wide mb-0.5">Il tuo hotel</p>
-                    <h2 className="text-base font-bold text-gray-900 leading-tight">{selected.name}</h2>
-                    <p className="text-sm text-gray-500">{selected.city}, {selected.region}</p>
-                    <div className="flex items-center gap-2 mt-1">
-                      <Stars n={selected.stars} />
-                      <span className="text-xs text-gray-400">{selected.stars} stelle</span>
+                {/* ── Mio hotel ── */}
+                <div className="bg-teal-50 border border-teal-200 rounded-xl p-4 shrink-0">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <p className="text-xs font-medium text-teal-600 uppercase tracking-wide mb-0.5">Il tuo hotel</p>
+                      <h2 className="text-base font-bold text-gray-900 leading-tight">{selected.name}</h2>
+                      <p className="text-sm text-gray-500">{selected.city}, {selected.region}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <Stars n={selected.stars} />
+                        <span className="text-xs text-gray-400">{selected.stars} stelle</span>
+                      </div>
                     </div>
+                    <button onClick={() => { setSelected(null); setMobileView("map"); }} className="text-gray-400 hover:text-gray-600 text-lg leading-none shrink-0 mt-0.5">✕</button>
                   </div>
-                  <button onClick={() => setSelected(null)} className="text-gray-400 hover:text-gray-600 text-lg leading-none shrink-0">✕</button>
+                  <p className="mt-2 text-sm text-teal-700 font-semibold">Prezzo base: €{selected.basePrice}/notte</p>
                 </div>
-                <p className="mt-2 text-sm text-teal-700 font-semibold">Prezzo base: €{selected.basePrice}/notte</p>
-              </div>
 
-              {/* ── Competitor con checkbox ── */}
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-sm font-semibold text-gray-700">
-                    Competitor entro 20 km
-                    <span className="ml-2 bg-amber-100 text-amber-700 text-xs font-bold px-2 py-0.5 rounded-full">
-                      {allCompetitors.length}
-                    </span>
-                  </h3>
-                  {allCompetitors.length > 0 && (
-                    <button onClick={toggleAll} className="text-xs text-teal-600 hover:underline">
-                      {allChecked ? "Deseleziona tutti" : "Seleziona tutti"}
-                    </button>
+                {/* ── Lista competitor con checkbox ── */}
+                <div className="shrink-0">
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-sm font-semibold text-gray-700">
+                      Competitor entro 20 km
+                      <span className="ml-2 bg-amber-100 text-amber-700 text-xs font-bold px-2 py-0.5 rounded-full">
+                        {allCompetitors.length}
+                      </span>
+                    </h3>
+                    {allCompetitors.length > 0 && (
+                      <button onClick={toggleAll} className="text-xs text-teal-600 hover:underline">
+                        {allChecked ? "Deseleziona tutti" : "Seleziona tutti"}
+                      </button>
+                    )}
+                  </div>
+
+                  {allCompetitors.length === 0 ? (
+                    <p className="text-xs text-gray-400 italic">Nessun competitor nel raggio di 20 km.</p>
+                  ) : (
+                    <>
+                      <ul className="space-y-1.5 max-h-[260px] overflow-y-auto pr-0.5">
+                        {allCompetitors.map((c) => {
+                          const checked = selectedCompetitorIds.has(c.id);
+                          return (
+                            <li
+                              key={c.id}
+                              onClick={() => toggleCompetitor(c.id)}
+                              className={`flex items-center gap-3 rounded-lg px-3 py-2 cursor-pointer border transition-colors ${
+                                checked
+                                  ? "bg-amber-50 border-amber-200 hover:bg-amber-100"
+                                  : "bg-gray-50 border-gray-200 hover:bg-gray-100"
+                              }`}
+                            >
+                              <div className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${
+                                checked ? "bg-amber-400 border-amber-400" : "border-gray-300 bg-white"
+                              }`}>
+                                {checked && <span className="text-white text-[9px] font-bold leading-none">✓</span>}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className={`text-xs font-medium truncate ${checked ? "text-gray-800" : "text-gray-400"}`}>{c.name}</p>
+                                <div className="flex items-center gap-1.5 mt-0.5">
+                                  <Stars n={c.stars} />
+                                  <span className="text-[10px] text-gray-400">
+                                    {distanceKm(selected.lat, selected.lng, c.lat, c.lng).toFixed(1)} km
+                                  </span>
+                                </div>
+                              </div>
+                              <span className={`text-xs font-semibold shrink-0 ${checked ? "text-gray-700" : "text-gray-300"}`}>
+                                €{c.basePrice}
+                              </span>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                      <p className="mt-1.5 text-xs text-gray-400 text-right">
+                        {selectedCompetitorIds.size} di {allCompetitors.length} selezionati
+                      </p>
+                    </>
                   )}
                 </div>
 
-                {allCompetitors.length === 0 ? (
-                  <p className="text-xs text-gray-400 italic">Nessun competitor nel raggio di 20 km.</p>
-                ) : (
-                  <ul className="space-y-1.5">
-                    {allCompetitors.map((c) => {
-                      const checked = selectedCompetitorIds.has(c.id);
-                      return (
-                        <li
-                          key={c.id}
-                          onClick={() => toggleCompetitor(c.id)}
-                          className={`flex items-center gap-3 rounded-lg px-3 py-2 cursor-pointer border transition-colors ${
-                            checked
-                              ? "bg-amber-50 border-amber-200 hover:bg-amber-100"
-                              : "bg-gray-50 border-gray-200 hover:bg-gray-100"
-                          }`}
-                        >
-                          {/* Checkbox */}
-                          <div className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${
-                            checked ? "bg-amber-400 border-amber-400" : "border-gray-300 bg-white"
-                          }`}>
-                            {checked && <span className="text-white text-[9px] font-bold leading-none">✓</span>}
-                          </div>
-                          {/* Info */}
-                          <div className="flex-1 min-w-0">
-                            <p className={`text-xs font-medium truncate ${checked ? "text-gray-800" : "text-gray-400"}`}>{c.name}</p>
-                            <div className="flex items-center gap-1.5 mt-0.5">
-                              <Stars n={c.stars} />
-                              <span className="text-[10px] text-gray-400">
-                                {distanceKm(selected.lat, selected.lng, c.lat, c.lng).toFixed(1)} km
-                              </span>
-                            </div>
-                          </div>
-                          <span className={`text-xs font-semibold shrink-0 ${checked ? "text-gray-700" : "text-gray-300"}`}>
-                            €{c.basePrice}
-                          </span>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                )}
-
-                {allCompetitors.length > 0 && (
-                  <p className="mt-2 text-xs text-gray-400 text-right">
-                    {selectedCompetitorIds.size} di {allCompetitors.length} selezionati
-                  </p>
-                )}
-              </div>
-
-              {/* ── Anteprima confronto ── */}
-              {checkedCompetitors.length > 0 && (
-                <div>
-                  <h3 className="text-sm font-semibold text-gray-700 mb-0.5">
-                    Anteprima confronto prezzi
-                  </h3>
+                {/* ── Anteprima confronto prezzi ── */}
+                <div className="shrink-0">
+                  <h3 className="text-sm font-semibold text-gray-700 mb-0.5">Anteprima confronto prezzi</h3>
                   <p className="text-xs text-gray-400 mb-2">Prezzi stimati per domani notte</p>
-                  <ComparisonTable selected={selected} competitors={checkedCompetitors} />
+                  {checkedCompetitors.length === 0 ? (
+                    <div className="bg-gray-50 border border-gray-100 rounded-lg p-4 text-center text-xs text-gray-400 italic">
+                      Seleziona almeno un competitor per vedere l'anteprima
+                    </div>
+                  ) : (
+                    <ComparisonTable selected={selected} competitors={checkedCompetitors} />
+                  )}
                 </div>
-              )}
 
-              {/* ── CTA ── */}
-              <div className="sticky bottom-0 bg-white pt-2 pb-1 border-t border-gray-100 mt-auto">
+              </div>{/* end scrollable area */}
+
+              {/* ── CTA sticky al fondo ── */}
+              <div className="shrink-0 px-4 pt-3 pb-4 border-t border-gray-100 bg-white">
                 <button
                   onClick={handleStart}
-                  disabled={!selected}
-                  className="w-full bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white font-semibold py-3 rounded-xl transition-colors text-sm shadow-sm"
+                  className="w-full bg-teal-600 hover:bg-teal-700 text-white font-semibold py-3 rounded-xl transition-colors text-sm shadow-sm"
                 >
                   Inizia demo con {checkedCompetitors.length} competitor →
                 </button>
@@ -462,7 +566,6 @@ export default function DemoMap() {
                   Vedrai dashboard, alert e storico prezzi in modalità demo
                 </p>
               </div>
-
             </div>
           )}
         </aside>
