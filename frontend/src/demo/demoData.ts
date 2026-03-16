@@ -7,6 +7,76 @@ import type {
   Hotel,
   User,
 } from "../types";
+import type { ItalyHotel } from "./italyHotels";
+
+/** Deterministic pseudo-random in [0,1) seeded by a string */
+function seededRand(seed: string, salt: number): number {
+  let h = salt;
+  for (let i = 0; i < seed.length; i++) {
+    h = Math.imul(h ^ seed.charCodeAt(i), 0x9e3779b9);
+    h ^= h >>> 16;
+  }
+  return (h >>> 0) / 0xffffffff;
+}
+
+export function generateDemoComparisonForHotel(
+  hotel: ItalyHotel,
+  competitors: ItalyHotel[]
+): ComparisonRow[] {
+  const otas = ["booking", "expedia", "hotels_com", "agoda"];
+  const allHotels = [
+    { h: hotel, isOwn: true },
+    ...competitors.map((c) => ({ h: c, isOwn: false })),
+  ];
+
+  const rows = allHotels.map(({ h, isOwn }) => {
+    // price variation ±8% around base price, deterministic per hotel
+    const variation = 0.92 + seededRand(h.id, 1) * 0.16;
+    const base = Math.round(h.basePrice * variation);
+
+    const otaPrices: Record<string, number | null> = {};
+    otas.forEach((ota, i) => {
+      // booking cheapest, then escalates slightly per OTA
+      const otaMult = 1 + i * 0.025 + (seededRand(h.id + ota, 2) - 0.5) * 0.04;
+      otaPrices[ota] = Math.round(base * otaMult);
+    });
+
+    const validPrices = Object.values(otaPrices).filter((v) => v != null) as number[];
+    const min_price = Math.min(...validPrices);
+
+    return { hotel_key: h.xoteloKey, hotel_name: h.name, is_own_hotel: isOwn, ota_prices: otaPrices, min_price, rank: 0 };
+  });
+
+  // assign rank by min_price ascending
+  const sorted = [...rows].sort((a, b) => a.min_price - b.min_price);
+  sorted.forEach((r, i) => { r.rank = i + 1; });
+
+  return rows as ComparisonRow[];
+}
+
+export function buildDemoHotelFromItaly(
+  hotel: ItalyHotel,
+  competitors: ItalyHotel[]
+): Hotel {
+  return {
+    id: "demo-hotel-id",
+    user_id: "demo-user-id",
+    name: hotel.name,
+    xotelo_hotel_key: hotel.xoteloKey,
+    city: hotel.city,
+    stars: hotel.stars,
+    created_at: subDays(new Date(), 30).toISOString(),
+    competitors: competitors.map((c, i) => ({
+      id: `comp-demo-${i}`,
+      hotel_id: "demo-hotel-id",
+      competitor_name: c.name,
+      competitor_xotelo_key: c.xoteloKey,
+      competitor_stars: c.stars,
+      is_active: true,
+      created_at: subDays(new Date(), 28 - i).toISOString(),
+    })),
+  };
+}
 
 export const DEMO_USER: User = {
   id: "demo-user-id",

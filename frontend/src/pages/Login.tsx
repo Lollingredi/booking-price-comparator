@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 
 export default function Login() {
-  const { login, loginDemo } = useAuth();
+  const { login } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -25,8 +25,7 @@ export default function Login() {
   };
 
   const handleDemo = () => {
-    loginDemo();
-    navigate("/dashboard");
+    navigate("/demo/mappa");
   };
 
   return (
@@ -93,7 +92,7 @@ export default function Login() {
             onClick={handleDemo}
             className="w-full bg-amber-500 hover:bg-amber-600 text-white font-medium py-2 rounded-lg text-sm transition-colors"
           >
-            Prova la demo →
+            Scegli il tuo hotel sulla mappa →
           </button>
         </div>
       </div>

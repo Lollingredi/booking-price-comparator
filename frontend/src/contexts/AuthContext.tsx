@@ -6,16 +6,19 @@ import React, {
   useState,
 } from "react";
 import { authApi } from "../api/auth";
-import type { User } from "../types";
-import { DEMO_USER } from "../demo/demoData";
+import type { User, ComparisonRow } from "../types";
+import { DEMO_USER, generateDemoComparisonForHotel, buildDemoHotelFromItaly } from "../demo/demoData";
+import type { ItalyHotel } from "../demo/italyHotels";
+import { getCompetitorsWithin20km } from "../demo/italyHotels";
 
 interface AuthContextValue {
   user: User | null;
   isLoading: boolean;
   isDemoMode: boolean;
+  demoComparison: ComparisonRow[];
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, full_name: string) => Promise<void>;
-  loginDemo: () => void;
+  loginDemo: (hotel?: ItalyHotel) => void;
   logout: () => void;
 }
 
@@ -25,6 +28,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isDemoMode, setIsDemoMode] = useState(false);
+  const [demoComparison, setDemoComparison] = useState<ComparisonRow[]>([]);
 
   const fetchMe = useCallback(async () => {
     try {
@@ -58,9 +62,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await fetchMe();
   };
 
-  const loginDemo = useCallback(() => {
-    setUser(DEMO_USER);
+  const loginDemo = useCallback((hotel?: ItalyHotel) => {
+    setUser({ ...DEMO_USER, full_name: hotel ? `Demo – ${hotel.city}` : DEMO_USER.full_name });
     setIsDemoMode(true);
+    if (hotel) {
+      const competitors = getCompetitorsWithin20km(hotel);
+      const comparison = generateDemoComparisonForHotel(hotel, competitors);
+      setDemoComparison(comparison);
+      // also store selected hotel so Competitors page can show it
+      (window as any).__demoHotel = buildDemoHotelFromItaly(hotel, competitors);
+    } else {
+      // fallback: use default static data (imported lazily to avoid circular deps)
+      import("../demo/demoData").then(({ DEMO_COMPARISON }) => setDemoComparison(DEMO_COMPARISON));
+    }
   }, []);
 
   const logout = useCallback(() => {
@@ -68,11 +82,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.removeItem("refresh_token");
     setUser(null);
     setIsDemoMode(false);
+    setDemoComparison([]);
+    (window as any).__demoHotel = undefined;
   }, []);
 
   return (
     <AuthContext.Provider
-      value={{ user, isLoading, isDemoMode, login, register, loginDemo, logout }}
+      value={{ user, isLoading, isDemoMode, demoComparison, login, register, loginDemo, logout }}
     >
       {children}
     </AuthContext.Provider>

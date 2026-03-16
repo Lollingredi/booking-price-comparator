@@ -39,14 +39,14 @@ export function useCurrentRates(checkIn: Date, checkOut: Date) {
 }
 
 export function useComparison(checkIn: Date, checkOut: Date) {
-  const { isDemoMode } = useAuth();
+  const { isDemoMode, demoComparison } = useAuth();
   const [data, setData] = useState<ComparisonRow[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const fetch = useCallback(async () => {
     if (isDemoMode) {
-      setData(DEMO_COMPARISON);
+      setData(demoComparison.length > 0 ? demoComparison : DEMO_COMPARISON);
       return;
     }
     setIsLoading(true);
@@ -62,7 +62,7 @@ export function useComparison(checkIn: Date, checkOut: Date) {
     } finally {
       setIsLoading(false);
     }
-  }, [checkIn, checkOut, isDemoMode]);
+  }, [checkIn, checkOut, isDemoMode, demoComparison]);
 
   useEffect(() => {
     fetch();
