@@ -169,8 +169,8 @@ export default function DemoMap() {
         {/* MAP */}
         <div className="flex-1 min-h-[50vh] lg:min-h-0">
           <MapContainer
-            center={[42.5, 12.5]}
-            zoom={6}
+            center={[44.6, 11.5]}
+            zoom={9}
             style={{ height: "100%", width: "100%", minHeight: "400px" }}
             zoomControl={true}
           >
@@ -229,7 +229,7 @@ export default function DemoMap() {
               <div className="text-5xl mb-4">🗺️</div>
               <h2 className="text-lg font-semibold text-gray-700 mb-2">Scegli il tuo hotel</h2>
               <p className="text-sm text-gray-500 max-w-xs">
-                Clicca su uno qualsiasi degli <strong>{ITALY_HOTELS.length} hotel</strong> presenti in Italia per vedere i competitor entro 20 km e confrontare i prezzi in tempo reale.
+                Clicca su uno qualsiasi degli <strong>{ITALY_HOTELS.length} hotel</strong> nelle province di <strong>Modena, Bologna, Ferrara e Ravenna</strong> per vedere i competitor entro 20 km e confrontare i prezzi in tempo reale.
               </p>
               <div className="mt-6 flex flex-col gap-2 text-xs text-gray-400 text-left">
                 <div className="flex items-center gap-2">
