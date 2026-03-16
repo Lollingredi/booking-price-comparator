@@ -402,3 +402,4 @@ coverage.xml
 # Celery
 celerybeat-schedule
 celerybeat.pid
+*.tsbuildinfo
