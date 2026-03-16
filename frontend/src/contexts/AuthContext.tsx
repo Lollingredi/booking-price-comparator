@@ -18,7 +18,7 @@ interface AuthContextValue {
   demoComparison: ComparisonRow[];
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, full_name: string) => Promise<void>;
-  loginDemo: (hotel?: ItalyHotel) => void;
+  loginDemo: (hotel?: ItalyHotel, competitors?: ItalyHotel[]) => void;
   logout: () => void;
 }
 
@@ -62,15 +62,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await fetchMe();
   };
 
-  const loginDemo = useCallback((hotel?: ItalyHotel) => {
+  const loginDemo = useCallback((hotel?: ItalyHotel, competitors?: ItalyHotel[]) => {
     setUser({ ...DEMO_USER, full_name: hotel ? `Demo – ${hotel.city}` : DEMO_USER.full_name });
     setIsDemoMode(true);
     if (hotel) {
-      const competitors = getCompetitorsWithin20km(hotel);
-      const comparison = generateDemoComparisonForHotel(hotel, competitors);
+      const comps = competitors ?? getCompetitorsWithin20km(hotel);
+      const comparison = generateDemoComparisonForHotel(hotel, comps);
       setDemoComparison(comparison);
-      // also store selected hotel so Competitors page can show it
-      (window as any).__demoHotel = buildDemoHotelFromItaly(hotel, competitors);
+      (window as any).__demoHotel = buildDemoHotelFromItaly(hotel, comps);
     } else {
       // fallback: use default static data (imported lazily to avoid circular deps)
       import("../demo/demoData").then(({ DEMO_COMPARISON }) => setDemoComparison(DEMO_COMPARISON));
