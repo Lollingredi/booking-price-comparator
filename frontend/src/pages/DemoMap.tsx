@@ -1,7 +1,7 @@
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import { MapContainer, TileLayer, Marker, Popup, Circle, useMap } from "react-leaflet";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { ITALY_HOTELS, distanceKm, getCompetitorsWithin20km } from "../demo/italyHotels";
@@ -28,8 +28,8 @@ function makeIcon(bg: string, border: string, label: string) {
 }
 
 const ICONS = {
-  default: makeIcon("#9CA3AF", "#ffffff", "H"),
-  selected: makeIcon("#0D9488", "#ffffff", "★"),
+  default:    makeIcon("#9CA3AF", "#ffffff", "H"),
+  selected:   makeIcon("#0D9488", "#ffffff", "★"),
   competitor: makeIcon("#F59E0B", "#ffffff", "C"),
 };
 
@@ -38,12 +38,12 @@ const ICONS = {
 function FlyTo({ hotel }: { hotel: ItalyHotel | null }) {
   const map = useMap();
   useEffect(() => {
-    if (hotel) map.flyTo([hotel.lat, hotel.lng], 12, { duration: 1.2 });
+    if (hotel) map.flyTo([hotel.lat, hotel.lng], 13, { duration: 1.2 });
   }, [hotel, map]);
   return null;
 }
 
-// ─── Stars renderer ──────────────────────────────────────────────────────────
+// ─── Stars renderer ───────────────────────────────────────────────────────────
 
 function Stars({ n }: { n: number }) {
   return (
@@ -53,7 +53,146 @@ function Stars({ n }: { n: number }) {
   );
 }
 
-// ─── Price comparison mini-table ─────────────────────────────────────────────
+// ─── Search box (floating over the map) ──────────────────────────────────────
+
+function HotelSearchBox({ onSelect }: { onSelect: (h: ItalyHotel) => void }) {
+  const [query, setQuery] = useState("");
+  const [open, setOpen]   = useState(false);
+  const [cursor, setCursor] = useState(-1);
+  const inputRef  = useRef<HTMLInputElement>(null);
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const suggestions = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return [];
+    return ITALY_HOTELS.filter(
+      (h) =>
+        h.name.toLowerCase().includes(q) ||
+        h.city.toLowerCase().includes(q) ||
+        h.region.toLowerCase().includes(q)
+    ).slice(0, 10);
+  }, [query]);
+
+  const pick = useCallback(
+    (h: ItalyHotel) => {
+      setQuery(h.name);
+      setOpen(false);
+      setCursor(-1);
+      onSelect(h);
+    },
+    [onSelect]
+  );
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (!open || suggestions.length === 0) return;
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setCursor((c) => Math.min(c + 1, suggestions.length - 1));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setCursor((c) => Math.max(c - 1, 0));
+    } else if (e.key === "Enter" && cursor >= 0) {
+      e.preventDefault();
+      pick(suggestions[cursor]);
+    } else if (e.key === "Escape") {
+      setOpen(false);
+    }
+  };
+
+  return (
+    <div
+      style={{ position: "absolute", top: 12, left: 12, zIndex: 1001, width: 300 }}
+    >
+      {/* Input */}
+      <div style={{ position: "relative" }}>
+        <span style={{
+          position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)",
+          color: "#9CA3AF", fontSize: 15, pointerEvents: "none",
+        }}>🔍</span>
+        <input
+          ref={inputRef}
+          type="text"
+          value={query}
+          placeholder="Cerca hotel o città..."
+          onChange={(e) => { setQuery(e.target.value); setOpen(true); setCursor(-1); }}
+          onFocus={() => { if (suggestions.length > 0) setOpen(true); }}
+          onBlur={() => { closeTimer.current = setTimeout(() => setOpen(false), 150); }}
+          onKeyDown={handleKeyDown}
+          style={{
+            width: "100%", boxSizing: "border-box",
+            paddingLeft: 32, paddingRight: query ? 28 : 10, paddingTop: 9, paddingBottom: 9,
+            border: "none", borderRadius: open && suggestions.length ? "10px 10px 0 0" : 10,
+            boxShadow: "0 2px 12px rgba(0,0,0,0.18)",
+            fontSize: 14, outline: "none", background: "white",
+          }}
+        />
+        {query && (
+          <button
+            onClick={() => { setQuery(""); setOpen(false); inputRef.current?.focus(); }}
+            style={{
+              position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)",
+              background: "none", border: "none", cursor: "pointer", color: "#9CA3AF", fontSize: 16,
+            }}
+          >×</button>
+        )}
+      </div>
+
+      {/* Dropdown */}
+      {open && suggestions.length > 0 && (
+        <ul
+          onMouseDown={(e) => e.preventDefault()}
+          style={{
+            margin: 0, padding: 0, listStyle: "none",
+            background: "white", borderRadius: "0 0 10px 10px",
+            boxShadow: "0 6px 20px rgba(0,0,0,0.15)",
+            maxHeight: 320, overflowY: "auto",
+          }}
+        >
+          {suggestions.map((h, i) => (
+            <li
+              key={h.id}
+              onClick={() => { clearTimeout(closeTimer.current!); pick(h); }}
+              onMouseEnter={() => setCursor(i)}
+              style={{
+                padding: "8px 12px",
+                cursor: "pointer",
+                background: cursor === i ? "#F0FDFA" : "white",
+                borderTop: i > 0 ? "1px solid #F3F4F6" : "none",
+                display: "flex", alignItems: "center", justifyContent: "space-between",
+                gap: 8,
+              }}
+            >
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontWeight: 600, fontSize: 13, color: "#111827", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                  {h.name}
+                </div>
+                <div style={{ fontSize: 11, color: "#6B7280" }}>
+                  {h.city} · {h.region}
+                </div>
+              </div>
+              <div style={{ fontSize: 11, color: "#F59E0B", whiteSpace: "nowrap", flexShrink: 0 }}>
+                {"★".repeat(h.stars)}
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {/* No results */}
+      {open && query.trim() && suggestions.length === 0 && (
+        <div style={{
+          background: "white", borderRadius: "0 0 10px 10px",
+          boxShadow: "0 6px 20px rgba(0,0,0,0.12)",
+          padding: "10px 14px", fontSize: 13, color: "#9CA3AF",
+        }}>
+          Nessun hotel trovato
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Price comparison mini-table ──────────────────────────────────────────────
 
 function ComparisonTable({ selected, competitors }: { selected: ItalyHotel; competitors: ItalyHotel[] }) {
   const rows = useMemo(
@@ -62,10 +201,7 @@ function ComparisonTable({ selected, competitors }: { selected: ItalyHotel; comp
   );
   const otas = ["booking", "expedia", "hotels_com", "agoda"];
   const otaLabels: Record<string, string> = {
-    booking: "Booking",
-    expedia: "Expedia",
-    hotels_com: "Hotels.com",
-    agoda: "Agoda",
+    booking: "Booking", expedia: "Expedia", hotels_com: "Hotels.com", agoda: "Agoda",
   };
 
   return (
@@ -85,11 +221,8 @@ function ComparisonTable({ selected, competitors }: { selected: ItalyHotel; comp
         </thead>
         <tbody>
           {rows.map((row) => (
-            <tr
-              key={row.hotel_key}
-              className={row.is_own_hotel ? "bg-teal-50" : "hover:bg-gray-50"}
-            >
-              <td className="px-2 py-1.5 border-b border-gray-100 max-w-[120px]">
+            <tr key={row.hotel_key} className={row.is_own_hotel ? "bg-teal-50" : "hover:bg-gray-50"}>
+              <td className="px-2 py-1.5 border-b border-gray-100 max-w-[130px]">
                 <span className="truncate block text-gray-800 font-medium">
                   {row.is_own_hotel ? (
                     <span className="inline-flex items-center gap-1">
@@ -108,11 +241,9 @@ function ComparisonTable({ selected, competitors }: { selected: ItalyHotel; comp
                 €{row.min_price}
               </td>
               <td className="text-center px-2 py-1.5 border-b border-gray-100">
-                <span
-                  className={`inline-block w-5 h-5 rounded-full text-white text-[10px] font-bold leading-5 ${
-                    row.rank === 1 ? "bg-teal-500" : row.rank <= 3 ? "bg-amber-400" : "bg-gray-300"
-                  }`}
-                >
+                <span className={`inline-block w-5 h-5 rounded-full text-white text-[10px] font-bold leading-5 ${
+                  row.rank === 1 ? "bg-teal-500" : row.rank <= 3 ? "bg-amber-400" : "bg-gray-300"
+                }`}>
                   {row.rank}
                 </span>
               </td>
@@ -128,7 +259,7 @@ function ComparisonTable({ selected, competitors }: { selected: ItalyHotel; comp
 
 export default function DemoMap() {
   const { loginDemo } = useAuth();
-  const navigate = useNavigate();
+  const navigate      = useNavigate();
   const [selected, setSelected] = useState<ItalyHotel | null>(null);
 
   const competitors = useMemo(
@@ -144,6 +275,7 @@ export default function DemoMap() {
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
+
       {/* Header */}
       <header className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-3">
@@ -159,20 +291,20 @@ export default function DemoMap() {
         </button>
       </header>
 
-      {/* Instruction banner */}
+      {/* Banner */}
       <div className="bg-amber-50 border-b border-amber-200 px-4 py-2 text-center text-sm text-amber-800 shrink-0">
-        <strong>Scegli il tuo hotel</strong> sulla mappa per vedere i competitor nel raggio di 20 km e confrontare i prezzi OTA
+        <strong>Scegli il tuo hotel</strong> sulla mappa — oppure cercalo con la barra di ricerca — per vedere i competitor nel raggio di 20 km
       </div>
 
-      {/* Body: map + panel */}
+      {/* Body */}
       <div className="flex flex-col lg:flex-row flex-1 overflow-hidden">
+
         {/* MAP */}
-        <div className="flex-1 min-h-[50vh] lg:min-h-0">
+        <div className="flex-1 min-h-[50vh] lg:min-h-0 relative">
           <MapContainer
-            center={[44.6, 11.5]}
-            zoom={9}
+            center={[44.55, 11.42]}
+            zoom={10}
             style={{ height: "100%", width: "100%", minHeight: "400px" }}
-            zoomControl={true}
           >
             <TileLayer
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
@@ -180,7 +312,6 @@ export default function DemoMap() {
             />
             <FlyTo hotel={selected} />
 
-            {/* 20km radius circle */}
             {selected && (
               <Circle
                 center={[selected.lat, selected.lng]}
@@ -189,12 +320,10 @@ export default function DemoMap() {
               />
             )}
 
-            {/* All markers */}
             {ITALY_HOTELS.map((hotel) => {
               const isSelected = selected?.id === hotel.id;
-              const isComp = !isSelected && competitors.some((c) => c.id === hotel.id);
-              const icon = isSelected ? ICONS.selected : isComp ? ICONS.competitor : ICONS.default;
-
+              const isComp     = !isSelected && competitors.some((c) => c.id === hotel.id);
+              const icon       = isSelected ? ICONS.selected : isComp ? ICONS.competitor : ICONS.default;
               return (
                 <Marker
                   key={hotel.id}
@@ -203,14 +332,14 @@ export default function DemoMap() {
                   eventHandlers={{ click: () => setSelected(hotel) }}
                 >
                   <Popup>
-                    <div className="text-sm min-w-[160px]">
-                      <p className="font-semibold text-gray-800">{hotel.name}</p>
-                      <p className="text-gray-500 text-xs">{hotel.city}, {hotel.region}</p>
-                      <Stars n={hotel.stars} />
-                      <p className="mt-1 text-teal-700 font-medium">da €{hotel.basePrice}/notte</p>
+                    <div style={{ minWidth: 160 }}>
+                      <p style={{ fontWeight: 700, fontSize: 13 }}>{hotel.name}</p>
+                      <p style={{ fontSize: 11, color: "#6B7280" }}>{hotel.city}</p>
+                      <p style={{ fontSize: 11, color: "#F59E0B" }}>{"★".repeat(hotel.stars)}</p>
+                      <p style={{ fontSize: 12, color: "#0D9488", fontWeight: 600 }}>da €{hotel.basePrice}/notte</p>
                       <button
                         onClick={() => setSelected(hotel)}
-                        className="mt-2 w-full bg-teal-600 text-white text-xs rounded px-2 py-1 hover:bg-teal-700"
+                        style={{ marginTop: 6, width: "100%", background: "#0D9488", color: "white", border: "none", borderRadius: 6, padding: "4px 8px", fontSize: 11, cursor: "pointer" }}
                       >
                         Seleziona
                       </button>
@@ -220,6 +349,9 @@ export default function DemoMap() {
               );
             })}
           </MapContainer>
+
+          {/* Search overlay — outside MapContainer to avoid Leaflet interference */}
+          <HotelSearchBox onSelect={setSelected} />
         </div>
 
         {/* SIDE PANEL */}
@@ -229,7 +361,8 @@ export default function DemoMap() {
               <div className="text-5xl mb-4">🗺️</div>
               <h2 className="text-lg font-semibold text-gray-700 mb-2">Scegli il tuo hotel</h2>
               <p className="text-sm text-gray-500 max-w-xs">
-                Clicca su uno qualsiasi degli <strong>{ITALY_HOTELS.length} hotel</strong> nelle province di <strong>Modena, Bologna, Ferrara e Ravenna</strong> per vedere i competitor entro 20 km e confrontare i prezzi in tempo reale.
+                Cerca per nome o città, oppure clicca direttamente sulla mappa.{" "}
+                <strong>{ITALY_HOTELS.length} hotel</strong> nelle province di Modena, Bologna, Ferrara e Ravenna.
               </p>
               <div className="mt-6 flex flex-col gap-2 text-xs text-gray-400 text-left">
                 <div className="flex items-center gap-2">
@@ -248,7 +381,8 @@ export default function DemoMap() {
             </div>
           ) : (
             <div className="p-4 flex flex-col gap-4">
-              {/* Selected hotel card */}
+
+              {/* Selected card */}
               <div className="bg-teal-50 border border-teal-200 rounded-xl p-4">
                 <div className="flex items-start justify-between gap-2">
                   <div>
@@ -263,10 +397,7 @@ export default function DemoMap() {
                   <button
                     onClick={() => setSelected(null)}
                     className="text-gray-400 hover:text-gray-600 text-lg leading-none shrink-0"
-                    title="Deseleziona"
-                  >
-                    ✕
-                  </button>
+                  >✕</button>
                 </div>
                 <p className="mt-2 text-sm text-teal-700 font-semibold">
                   Prezzo base: €{selected.basePrice}/notte
@@ -328,6 +459,7 @@ export default function DemoMap() {
                   Vedrai dashboard, alert e storico prezzi in modalità demo
                 </p>
               </div>
+
             </div>
           )}
         </aside>
