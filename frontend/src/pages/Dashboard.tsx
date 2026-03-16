@@ -8,7 +8,6 @@ import { useAuth } from "../contexts/AuthContext";
 import { useComparison, useHistory } from "../hooks/useRates";
 import { alertsApi } from "../api/alerts";
 import type { AlertLog } from "../types";
-import { ROOM_TYPES } from "../types";
 import { DEMO_ALERT_LOGS } from "../demo/demoData";
 
 export default function Dashboard() {
@@ -17,15 +16,11 @@ export default function Dashboard() {
   const [checkIn] = useState(today);
   const [checkOut] = useState(addDays(today, 1));
 
-  const [roomTypeId, setRoomTypeId] = useState("double_matrimoniale");
-  const roomType = ROOM_TYPES.find((r) => r.id === roomTypeId) ?? ROOM_TYPES[0];
-
   const { data: comparison, isLoading: loadingComparison } = useComparison(checkIn, checkOut);
   const ownHotel = comparison.find((r) => r.is_own_hotel);
   const { data: history, isLoading: loadingHistory } = useHistory(
     ownHotel?.hotel_key ?? "",
-    30,
-    roomType.multiplier
+    30
   );
 
   const [alertLogs, setAlertLogs] = useState<AlertLog[]>([]);
@@ -104,23 +99,9 @@ export default function Dashboard() {
             <h2 className="text-base font-semibold text-gray-800">
               Storico prezzi (30 giorni)
             </h2>
-            <div className="flex items-center gap-2">
-              <label htmlFor="room-type-select" className="text-sm text-gray-500 whitespace-nowrap">
-                Tipo camera:
-              </label>
-              <select
-                id="room-type-select"
-                value={roomTypeId}
-                onChange={(e) => setRoomTypeId(e.target.value)}
-                className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-teal-500"
-              >
-                {ROOM_TYPES.map((rt) => (
-                  <option key={rt.id} value={rt.id}>
-                    {rt.label}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <span className="text-xs text-gray-400 bg-gray-50 border border-gray-200 rounded-full px-3 py-1">
+              Prezzo minimo rilevato sulle piattaforme
+            </span>
           </div>
           <div className="bg-white rounded-[14px] border border-gray-200 p-4">
             <PriceChart data={history} isLoading={loadingHistory} />

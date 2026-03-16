@@ -71,12 +71,9 @@ export function useComparison(checkIn: Date, checkOut: Date) {
   return { data, isLoading, error, refetch: fetch };
 }
 
-export function useHistory(hotelKey: string, days = 30, roomMultiplier = 1) {
+export function useHistory(hotelKey: string, days = 30) {
   const { isDemoMode } = useAuth();
-  const demoHistory = useMemo(
-    () => generateDemoHistory(roomMultiplier),
-    [roomMultiplier]
-  );
+  const demoHistory = useMemo(() => generateDemoHistory(), []);
   const [data, setData] = useState<HistoryPoint[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

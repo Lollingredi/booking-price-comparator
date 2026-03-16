@@ -161,10 +161,7 @@ export const DEMO_COMPARISON: ComparisonRow[] = [
   },
 ];
 
-/**
- * @param roomMultiplier  Price multiplier for the selected room type (1.0 = doppia matrimoniale).
- */
-export function generateDemoHistory(roomMultiplier = 1): HistoryPoint[] {
+export function generateDemoHistory(): HistoryPoint[] {
   const today = new Date();
   const points: HistoryPoint[] = [];
   const otas = [
@@ -178,16 +175,16 @@ export function generateDemoHistory(roomMultiplier = 1): HistoryPoint[] {
     // Simulate realistic weekly seasonality + gentle trend
     const trend = (29 - i) * 0.3;
     const weekly = Math.sin((i / 7) * 2 * Math.PI) * 8;
-    const base = (140 + trend + weekly) * roomMultiplier;
+    const base = 140 + trend + weekly;
 
     const offsets: Record<string, number> = {
       booking: 0,
-      expedia: 4 * roomMultiplier,
-      hotels_com: 2 * roomMultiplier,
+      expedia: 4,
+      hotels_com: 2,
     };
 
     for (const ota of otas) {
-      const noise = (Math.random() - 0.5) * 6 * roomMultiplier;
+      const noise = (Math.random() - 0.5) * 6;
       points.push({
         date,
         ota_code: ota.code,
