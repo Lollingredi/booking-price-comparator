@@ -91,6 +91,22 @@ export interface HotelSearchResult {
   city: string | null;
 }
 
+export interface RoomType {
+  id: string;
+  label: string;
+  /** Price multiplier relative to the base double room price */
+  multiplier: number;
+}
+
+export const ROOM_TYPES: RoomType[] = [
+  { id: "double_matrimoniale", label: "Doppia matrimoniale", multiplier: 1.00 },
+  { id: "double_standard",     label: "Doppia standard",     multiplier: 0.88 },
+  { id: "single",              label: "Singola",             multiplier: 0.70 },
+  { id: "superior",            label: "Superior",            multiplier: 1.38 },
+  { id: "junior_suite",        label: "Junior Suite",        multiplier: 1.72 },
+  { id: "suite",               label: "Suite",               multiplier: 2.20 },
+];
+
 export interface Token {
   access_token: string;
   refresh_token: string;
