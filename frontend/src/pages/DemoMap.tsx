@@ -53,7 +53,7 @@ function Stars({ n }: { n: number }) {
   );
 }
 
-// ─── Search box (floating over the map) ──────────────────────────────────────
+// ─── Search box (panel) ───────────────────────────────────────────────────────
 
 function HotelSearchBox({ onSelect }: { onSelect: (h: ItalyHotel) => void }) {
   const [query, setQuery] = useState("");
@@ -100,9 +100,7 @@ function HotelSearchBox({ onSelect }: { onSelect: (h: ItalyHotel) => void }) {
   };
 
   return (
-    <div
-      style={{ position: "absolute", top: 12, left: 12, zIndex: 1001, width: 300 }}
-    >
+    <div style={{ position: "relative" }}>
       {/* Input */}
       <div style={{ position: "relative" }}>
         <span style={{
@@ -121,9 +119,10 @@ function HotelSearchBox({ onSelect }: { onSelect: (h: ItalyHotel) => void }) {
           style={{
             width: "100%", boxSizing: "border-box",
             paddingLeft: 32, paddingRight: query ? 28 : 10, paddingTop: 9, paddingBottom: 9,
-            border: "none", borderRadius: open && suggestions.length ? "10px 10px 0 0" : 10,
-            boxShadow: "0 2px 12px rgba(0,0,0,0.18)",
-            fontSize: 14, outline: "none", background: "white",
+            border: "1px solid #E5E7EB",
+            borderRadius: open && suggestions.length ? "8px 8px 0 0" : 8,
+            fontSize: 13, outline: "none", background: "white",
+            transition: "border-color 0.15s",
           }}
         />
         {query && (
@@ -137,15 +136,19 @@ function HotelSearchBox({ onSelect }: { onSelect: (h: ItalyHotel) => void }) {
         )}
       </div>
 
-      {/* Dropdown */}
+      {/* Dropdown — absolute so it overlaps the panel content below */}
       {open && suggestions.length > 0 && (
         <ul
           onMouseDown={(e) => e.preventDefault()}
           style={{
+            position: "absolute", top: "100%", left: 0, right: 0,
+            zIndex: 50,
             margin: 0, padding: 0, listStyle: "none",
-            background: "white", borderRadius: "0 0 10px 10px",
-            boxShadow: "0 6px 20px rgba(0,0,0,0.15)",
-            maxHeight: 320, overflowY: "auto",
+            background: "white",
+            border: "1px solid #E5E7EB", borderTop: "none",
+            borderRadius: "0 0 8px 8px",
+            boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
+            maxHeight: 300, overflowY: "auto",
           }}
         >
           {suggestions.map((h, i) => (
@@ -154,21 +157,17 @@ function HotelSearchBox({ onSelect }: { onSelect: (h: ItalyHotel) => void }) {
               onClick={() => { clearTimeout(closeTimer.current!); pick(h); }}
               onMouseEnter={() => setCursor(i)}
               style={{
-                padding: "8px 12px",
-                cursor: "pointer",
+                padding: "8px 12px", cursor: "pointer",
                 background: cursor === i ? "#F0FDFA" : "white",
-                borderTop: i > 0 ? "1px solid #F3F4F6" : "none",
-                display: "flex", alignItems: "center", justifyContent: "space-between",
-                gap: 8,
+                borderTop: i > 0 ? "1px solid #F9FAFB" : "none",
+                display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8,
               }}
             >
               <div style={{ minWidth: 0 }}>
                 <div style={{ fontWeight: 600, fontSize: 13, color: "#111827", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                   {h.name}
                 </div>
-                <div style={{ fontSize: 11, color: "#6B7280" }}>
-                  {h.city} · {h.region}
-                </div>
+                <div style={{ fontSize: 11, color: "#6B7280" }}>{h.city} · {h.region}</div>
               </div>
               <div style={{ fontSize: 11, color: "#F59E0B", whiteSpace: "nowrap", flexShrink: 0 }}>
                 {"★".repeat(h.stars)}
@@ -178,12 +177,11 @@ function HotelSearchBox({ onSelect }: { onSelect: (h: ItalyHotel) => void }) {
         </ul>
       )}
 
-      {/* No results */}
       {open && query.trim() && suggestions.length === 0 && (
         <div style={{
-          background: "white", borderRadius: "0 0 10px 10px",
-          boxShadow: "0 6px 20px rgba(0,0,0,0.12)",
-          padding: "10px 14px", fontSize: 13, color: "#9CA3AF",
+          position: "absolute", top: "100%", left: 0, right: 0, zIndex: 50,
+          background: "white", border: "1px solid #E5E7EB", borderTop: "none",
+          borderRadius: "0 0 8px 8px", padding: "10px 14px", fontSize: 13, color: "#9CA3AF",
         }}>
           Nessun hotel trovato
         </div>
@@ -349,13 +347,16 @@ export default function DemoMap() {
               );
             })}
           </MapContainer>
-
-          {/* Search overlay — outside MapContainer to avoid Leaflet interference */}
-          <HotelSearchBox onSelect={setSelected} />
         </div>
 
         {/* SIDE PANEL */}
         <aside className="w-full lg:w-[420px] shrink-0 bg-white border-t lg:border-t-0 lg:border-l border-gray-200 flex flex-col overflow-y-auto">
+
+          {/* Search bar — sempre visibile in cima al pannello */}
+          <div className="p-3 border-b border-gray-100">
+            <HotelSearchBox onSelect={setSelected} />
+          </div>
+
           {!selected ? (
             <div className="flex flex-col items-center justify-center h-full py-16 px-6 text-center">
               <div className="text-5xl mb-4">🗺️</div>

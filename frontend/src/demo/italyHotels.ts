@@ -53,6 +53,7 @@ export const ITALY_HOTELS: ItalyHotel[] = [
   { id: "bo24", name: "Hotel Granarolo",              city: "Granarolo dell'Emilia", region: "Bologna", lat: 44.5553, lng: 11.4611, stars: 3, basePrice: 90,  xoteloKey: "demo_bo24" },
   { id: "bo25", name: "Albergo La Pineta Granarolo",  city: "Granarolo dell'Emilia", region: "Bologna", lat: 44.5530, lng: 11.4630, stars: 2, basePrice: 65,  xoteloKey: "demo_bo25" },
   { id: "bo26", name: "Hotel Villa Granarolo",        city: "Granarolo dell'Emilia", region: "Bologna", lat: 44.5570, lng: 11.4580, stars: 3, basePrice: 80,  xoteloKey: "demo_bo26" },
+  { id: "bo40", name: "Emma Hotel Bologna Fiera",     city: "Granarolo dell'Emilia", region: "Bologna", lat: 44.5310, lng: 11.4050, stars: 4, basePrice: 125, xoteloKey: "demo_bo40" },
 
   // ════════════════════════════════════════
   // SAN LAZZARO DI SAVENA
