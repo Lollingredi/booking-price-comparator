@@ -263,7 +263,7 @@ export default function OnboardingMap() {
       let mainSlug = "";
       try {
         const res = await hotelsApi.search(selected.name);
-        mainSlug = res.data[0]?.booking_key ?? "";
+        mainSlug = res.data[0]?.hotel_key ?? "";
       } catch { /* keep empty on search failure */ }
       updateDetail(0, mainSlug ? `slug: ${mainSlug}` : "⚠ nessun slug trovato");
       await hotelsApi.createOrUpdate({
@@ -280,7 +280,7 @@ export default function OnboardingMap() {
         let slug = "";
         try {
           const res = await hotelsApi.search(comp.name);
-          slug = res.data[0]?.booking_key ?? "";
+          slug = res.data[0]?.hotel_key ?? "";
         } catch { /* keep empty on search failure */ }
         updateDetail(i + 1, slug ? `slug: ${slug}` : "⚠ nessun slug trovato");
         await hotelsApi.addCompetitor({
