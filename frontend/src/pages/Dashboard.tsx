@@ -23,9 +23,9 @@ export default function Dashboard() {
     if (!isDemoMode) hotelsApi.getMine().then(({ data }) => setMyHotel(data)).catch(() => {});
   }, [isDemoMode]);
 
-  const { data: comparison, isLoading: loadingComparison } = useComparison(checkIn, checkOut);
+  const { data: comparison, isLoading: loadingComparison, refetch: refetchComparison } = useComparison(checkIn, checkOut);
   const ownHotel = comparison.find((r) => r.is_own_hotel);
-  const { data: history, isLoading: loadingHistory } = useHistoryAll(7);
+  const { data: history, isLoading: loadingHistory, refetch: refetchHistory } = useHistoryAll(7);
 
   const [fetching, setFetching] = useState(false);
   const [fetchMsg, setFetchMsg] = useState<{ ok: boolean; text: string } | null>(null);
@@ -42,10 +42,9 @@ export default function Dashboard() {
       if (data.errors.length > 0) {
         setFetchMsg({ ok: false, text: `Errori: ${data.errors.join(" | ")}` });
       } else {
-        setFetchMsg({
-          ok: true,
-          text: `Trovati ${data.prices_found} prezzi su ${data.scraped} scrape (7 date × hotel). Ricarica la pagina.`,
-        });
+        setFetchMsg({ ok: true, text: `Trovati ${data.prices_found} prezzi. Aggiornamento in corso…` });
+        await Promise.all([refetchComparison(), refetchHistory()]);
+        setFetchMsg(null);
       }
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e);
