@@ -83,6 +83,19 @@ export default function Layout() {
           <Outlet />
         </ErrorBoundary>
       </main>
+      <footer className="border-t border-gray-200 bg-white mt-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 text-center text-xs text-gray-400">
+          Realizzato da{" "}
+          <a
+            href="https://rediverse.cc/projects"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-teal-600 hover:underline font-medium"
+          >
+            Redi Bako
+          </a>
+        </div>
+      </footer>
     </div>
   );
 }

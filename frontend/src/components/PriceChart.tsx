@@ -51,6 +51,14 @@ export default function PriceChart({ data, isLoading }: PriceChartProps) {
     String(a.date).localeCompare(String(b.date))
   );
 
+  // Compute Y-axis domain with 10% padding above/below
+  const allPrices = data.map((d) => d.min_price).filter((v) => v != null);
+  const minVal = Math.min(...allPrices);
+  const maxVal = Math.max(...allPrices);
+  const pad = Math.max((maxVal - minVal) * 0.15, 5);
+  const yMin = Math.max(0, Math.floor(minVal - pad));
+  const yMax = Math.ceil(maxVal + pad);
+
   return (
     <ResponsiveContainer width="100%" height={280}>
       <LineChart data={chartData} margin={{ top: 4, right: 16, left: 0, bottom: 4 }}>
@@ -64,6 +72,7 @@ export default function PriceChart({ data, isLoading }: PriceChartProps) {
           }}
         />
         <YAxis
+          domain={[yMin, yMax]}
           tick={{ fontSize: 11, fill: "#9ca3af" }}
           tickFormatter={(v) => `€${v}`}
           width={55}
