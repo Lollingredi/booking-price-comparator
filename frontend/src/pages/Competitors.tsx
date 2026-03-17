@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import HotelSearch from "../components/HotelSearch";
+import DemoHotelSearch from "../components/DemoHotelSearch";
 import { hotelsApi } from "../api/hotels";
 import type { Competitor, Hotel, HotelSearchResult } from "../types";
+import type { ItalyHotel } from "../demo/italyHotels";
 import { useAuth } from "../contexts/AuthContext";
 import { DEMO_HOTEL } from "../demo/demoData";
 
@@ -80,6 +82,18 @@ export default function Competitors() {
     if (r.city) setCity(r.city);
   };
 
+  const handleDemoHotelSelect = (h: ItalyHotel) => {
+    setHotelName(h.name);
+    setHotelKey(h.xoteloKey);
+    setCity(h.city);
+    setStars(h.stars);
+    setHotel((prev) =>
+      prev
+        ? { ...prev, name: h.name, xotelo_hotel_key: h.xoteloKey, city: h.city, stars: h.stars }
+        : prev
+    );
+  };
+
   const handleCompSelect = (r: HotelSearchResult) => {
     setCompName(r.name);
     setCompKey(r.hotel_key);
@@ -152,12 +166,14 @@ export default function Competitors() {
       {/* Hotel form */}
       <form onSubmit={handleSaveHotel} className="bg-white rounded-[14px] border border-gray-200 p-6 space-y-4">
         <h2 className="font-semibold text-gray-800">Impostazioni hotel</h2>
-        {!isDemoMode && (
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Cerca il tuo hotel</label>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Cerca il tuo hotel</label>
+          {isDemoMode ? (
+            <DemoHotelSearch onSelect={handleDemoHotelSelect} placeholder="Es. Hotel Bellavista Roma..." />
+          ) : (
             <HotelSearch onSelect={handleHotelSelect} placeholder="Es. Hotel Bellavista Roma..." />
-          </div>
-        )}
+          )}
+        </div>
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Nome</label>
@@ -165,8 +181,7 @@ export default function Competitors() {
               value={hotelName}
               onChange={(e) => setHotelName(e.target.value)}
               required
-              disabled={isDemoMode}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400 disabled:bg-gray-50 disabled:text-gray-500"
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"
             />
           </div>
           <div>
@@ -175,8 +190,7 @@ export default function Competitors() {
               value={city}
               onChange={(e) => setCity(e.target.value)}
               required
-              disabled={isDemoMode}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400 disabled:bg-gray-50 disabled:text-gray-500"
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"
             />
           </div>
         </div>
@@ -200,20 +214,17 @@ export default function Competitors() {
               onChange={(e) => setStars(e.target.value ? Number(e.target.value) : "")}
               min={1}
               max={5}
-              disabled={isDemoMode}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400 disabled:bg-gray-50 disabled:text-gray-500"
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"
             />
           </div>
         </div>
-        {!isDemoMode && (
-          <button
-            type="submit"
-            disabled={saving}
-            className="bg-teal-600 hover:bg-teal-700 text-white font-medium px-5 py-2 rounded-lg text-sm transition-colors disabled:opacity-60"
-          >
-            {saving ? "Salvataggio..." : "Salva hotel"}
-          </button>
-        )}
+        <button
+          type="submit"
+          disabled={saving}
+          className="bg-teal-600 hover:bg-teal-700 text-white font-medium px-5 py-2 rounded-lg text-sm transition-colors disabled:opacity-60"
+        >
+          {saving ? "Salvataggio..." : "Salva hotel"}
+        </button>
       </form>
 
       {/* Competitors */}
@@ -244,12 +255,17 @@ export default function Competitors() {
 
           <form onSubmit={handleAddCompetitor} className="border-t border-gray-100 pt-4 space-y-3">
             <h3 className="text-sm font-semibold text-gray-700">Aggiungi competitor</h3>
-            {!isDemoMode && (
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Cerca competitor</label>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Cerca competitor</label>
+              {isDemoMode ? (
+                <DemoHotelSearch
+                  onSelect={(h) => { setCompName(h.name); setCompKey(h.xoteloKey); setCompStars(h.stars); }}
+                  placeholder="Cerca hotel competitor..."
+                />
+              ) : (
                 <HotelSearch onSelect={handleCompSelect} placeholder="Cerca hotel competitor..." />
-              </div>
-            )}
+              )}
+            </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Nome</label>
