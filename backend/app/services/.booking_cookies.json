@@ -34,7 +34,7 @@
     "value": "0",
     "domain": ".booking.com",
     "path": "/",
-    "expires": 1789332504.79455,
+    "expires": 1789333580.111183,
     "httpOnly": true,
     "secure": true,
     "sameSite": "Lax"
@@ -47,16 +47,6 @@
     "expires": 1805286927,
     "httpOnly": false,
     "secure": false,
-    "sameSite": "Lax"
-  },
-  {
-    "name": "bkng_sso_auth",
-    "value": "CAIQi4nT0gIaZrfMmS01sqRvowKeaIAmkAPMlBmeqKYF3VKlM4Z+jABMk2O7YyGqU3u5UM3TnMiQegIB0UnHNCL/9Wo5oAZNFvEJamz7SEvIR+nFJKWBkKqMtm3BTmiI0Ln/zjMdFaqOWgUHf0Ghmw==",
-    "domain": ".booking.com",
-    "path": "/",
-    "expires": 1808340480.402985,
-    "httpOnly": true,
-    "secure": true,
     "sameSite": "Lax"
   },
   {
@@ -80,52 +70,62 @@
     "sameSite": "Lax"
   },
   {
-    "name": "g_state",
-    "value": "{\"i_l\":0,\"i_ll\":1773780508459,\"i_b\":\"+nX3zldKsd32kAdNT4VJ7pP5nwiFYjVJgyMWo/c7jFc\",\"i_e\":{\"enable_itp_optimization\":0}}",
+    "name": "bkng_sso_auth",
+    "value": "CAIQi4nT0gIaZgQKOYysF7btMkwH/gYZ5TUyHRBuLrTsBSZj9IY7H0i9XYshk3rM3xgoVt85EDJ74FI+CfGq1xgKVb9UoGRD4iWwudPMd+kLC0gbaAoGok6ZR8CI77+3wW6/LzuaMXq0GTDicm/nCw==",
     "domain": ".booking.com",
     "path": "/",
-    "expires": 1789332508,
-    "httpOnly": false,
-    "secure": false,
+    "expires": 1808341551.1962,
+    "httpOnly": true,
+    "secure": true,
     "sameSite": "Lax"
   },
   {
-    "name": "bk_nav_search",
-    "value": "%7B%22u%22%3A%22https%3A%2F%2Fwww.booking.com%2Fhotel%2Fit%2Fgrandhotelbaglioni.it.html%3Fcheckin%3D2026-03-17%26checkout%3D2026-03-18%26group_adults%3D2%26no_rooms%3D1%22%2C%22t%22%3A1773780509033%2C%22p%22%3A%22propertyPage%22%7D",
+    "name": "aws-waf-token",
+    "value": "bb2c3e20-f69f-4344-9337-3b3ebc7a4f23:DgoApG2TPeW8AAAA:VgywGuHJxx+762ap9FKbiJj1YvghAh46Il9x0XkHt/QSaR2iJ3htT7TFdnGNcQ8nmMRolG/gqiTzDWwXeRxS3t4uPmcdYJem/ksH9BfgiSQdpRk/5k6v7pXOYLdzQDcCu6G4hN0Nv8oErFClbLwI6YN39sy3VCJL4yfk497xH9hg1riJbbPCJyKDP31xKXD+5CIay43Y1BXhRwVwhS+r2NSNaZX20g5G1OPdEzws4hpy0NUlmyKcVvUodm3LjIZScx/abMrANg==",
     "domain": ".booking.com",
     "path": "/",
-    "expires": 1773782309.03323,
+    "expires": 1774127179,
+    "httpOnly": false,
+    "secure": true,
+    "sameSite": "None"
+  },
+  {
+    "name": "bk_nav_search",
+    "value": "%7B%22u%22%3A%22https%3A%2F%2Fwww.booking.com%2Fhotel%2Fit%2Fquarto-di-villa.it.html%3Fcheckin%3D2026-03-23%26checkout%3D2026-03-24%26group_adults%3D2%26no_rooms%3D1%22%2C%22t%22%3A1773781582445%2C%22p%22%3A%22propertyPage%22%7D",
+    "domain": ".booking.com",
+    "path": "/",
+    "expires": 1773783382.445651,
     "httpOnly": false,
     "secure": true,
     "sameSite": "Lax"
   },
   {
+    "name": "g_state",
+    "value": "{\"i_l\":0,\"i_ll\":1773781582849,\"i_b\":\"+nX3zldKsd32kAdNT4VJ7pP5nwiFYjVJgyMWo/c7jFc\",\"i_e\":{\"enable_itp_optimization\":0}}",
+    "domain": ".booking.com",
+    "path": "/",
+    "expires": 1789333582,
+    "httpOnly": false,
+    "secure": false,
+    "sameSite": "Lax"
+  },
+  {
     "name": "OptanonConsent",
-    "value": "implicitConsentCountry=GDPR&implicitConsentDate=1773750929179&isGpcEnabled=0&datestamp=Tue+Mar+17+2026+21%3A48%3A29+GMT%2B0100+(Ora+standard+dell%E2%80%99Europa+centrale)&version=202501.2.0&browserGpcFlag=0&isIABGlobal=false&hosts=&consentId=66d5bd43-f2f3-4023-b571-e1d4b120248a&interactionCount=0&isAnonUser=1&landingPath=NotLandingPage&groups=C0001%3A1%2CC0002%3A0%2CC0004%3A0&AwaitingReconsent=false",
+    "value": "implicitConsentCountry=GDPR&implicitConsentDate=1773750929179&isGpcEnabled=0&datestamp=Tue+Mar+17+2026+22%3A06%3A23+GMT%2B0100+(Ora+standard+dell%E2%80%99Europa+centrale)&version=202501.2.0&browserGpcFlag=0&isIABGlobal=false&hosts=&consentId=66d5bd43-f2f3-4023-b571-e1d4b120248a&interactionCount=0&isAnonUser=1&landingPath=NotLandingPage&groups=C0001%3A1%2CC0002%3A0%2CC0004%3A0&AwaitingReconsent=false",
     "domain": ".www.booking.com",
     "path": "/",
-    "expires": 1789332509,
+    "expires": 1789333583,
     "httpOnly": false,
     "secure": true,
     "sameSite": "None"
   },
   {
     "name": "bkng",
-    "value": "11UmFuZG9tSVYkc2RlIyh9Yaa29%2F3xUOLbwcLxQQ4VaCpWEypu9IN229wkS47sDAr2UMeYakVBoLthYmt6pGU%2F%2F18CxeYO1hXWOVGQUHzrW%2BB2t%2BKGmvR6XnhSCG6YSnTqCgoZX66DBDgpDvJDsjhdrePJhyEzaQCVj7ZOI10LssSmpJ7c5vMr8pNC%2FhIvksI%2Fge8I030JiNI%3D",
+    "value": "11UmFuZG9tSVYkc2RlIyh9Yaa29%2F3xUOLbiKbS0JOgDBKtCN8f0CTZfZastIMeKMxccDrCAzLyxbMks%2BGzhQMN0EKiK01%2BuPilG42xkwd5skZLhqW%2FHorMfA6ifYeM8TkMbC9toPHx6wWtZwmZl0yh0vBH8R3Q5JsN7CEV1WjuH%2B%2BjoOV8YjnPUpWteXvWp7Krz%2F%2B40770yhaC6gSSqne3FQ%3D%3D",
     "domain": ".booking.com",
     "path": "/",
-    "expires": 1808340510.603598,
+    "expires": 1808341583.988582,
     "httpOnly": true,
-    "secure": true,
-    "sameSite": "None"
-  },
-  {
-    "name": "aws-waf-token",
-    "value": "bb2c3e20-f69f-4344-9337-3b3ebc7a4f23:DgoAYXiSD10eAAAA:vCH//0u3uCdckDRC6Xu1ntFJFePL+gKcTI86+mpcpm4kt1GnKwBCDvhk/FF1nK3NrKvxfuEalKwQe/sb5hOqjbHpe1QVU5UhCaOYeDVJ722bxY2xqqnGIjavBsumjCG/3+pfaI2UlzLetUrRX04WSQ6ap2Z7WXCOZDvRC+HN5+IFcjw15jIkEmCO2QlcKOa6AlminaPSLAT478aMzcOU3qqu6d7toxo9B5AhWFWgBGuI1xysJpLZRWeGOJfkBCNbD+aDfycnJQ==",
-    "domain": ".booking.com",
-    "path": "/",
-    "expires": 1774126111,
-    "httpOnly": false,
     "secure": true,
     "sameSite": "None"
   }
