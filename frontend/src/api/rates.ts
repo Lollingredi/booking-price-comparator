@@ -20,10 +20,10 @@ export const ratesApi = {
       params: { check_in, check_out },
     }),
 
-  fetchNow: (check_in: string, check_out: string) =>
+  fetchNow: (check_in: string, check_out: string, days_ahead = 7) =>
     apiClient.post<{ scraped: number; prices_found: number; errors: string[] }>(
       "/api/rates/fetch-now",
       null,
-      { params: { check_in, check_out } }
+      { params: { check_in, check_out, days_ahead } }
     ),
 };

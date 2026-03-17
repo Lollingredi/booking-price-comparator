@@ -28,8 +28,10 @@ async def fetch_now(
     db: DB,
     check_in: date = Query(...),
     check_out: date = Query(...),
+    days_ahead: int = Query(default=7, ge=1, le=30),
 ):
-    """Manually trigger a price scrape for the user's hotel + all active competitors."""
+    """Manually trigger a price scrape for the user's hotel + all active competitors.
+    Scrapes `days_ahead` consecutive check-in dates starting from check_in."""
     result = await db.execute(select(Hotel).where(Hotel.user_id == current_user.id))
     hotel = result.scalar_one_or_none()
     if not hotel:
@@ -60,27 +62,32 @@ async def fetch_now(
     prices_found = 0
     errors: list[str] = []
 
-    for key in keys:
-        try:
-            snaps = await fetch_and_save_rates(db, key, check_in, check_out)
-            scraped += 1
-            prices_found += len(snaps)
-            if len(snaps) == 0:
-                logger.warning(
-                    "fetch-now: no prices found for slug=%r (%s→%s) — slug may be incorrect",
-                    key, check_in, check_out,
+    # Build the list of check-in dates to scrape
+    date_offsets = list(range(days_ahead))
+    check_in_dates = [(check_in + timedelta(days=i), check_in + timedelta(days=i + 1)) for i in date_offsets]
+
+    for ci, co in check_in_dates:
+        for key in keys:
+            try:
+                snaps = await fetch_and_save_rates(db, key, ci, co)
+                scraped += 1
+                prices_found += len(snaps)
+                if len(snaps) == 0:
+                    logger.warning(
+                        "fetch-now: no prices found for slug=%r (%s→%s) — slug may be incorrect",
+                        key, ci, co,
+                    )
+                else:
+                    logger.info(
+                        "fetch-now: %d price(s) for slug=%r (%s→%s)",
+                        len(snaps), key, ci, co,
+                    )
+            except Exception as exc:
+                logger.error(
+                    "fetch-now: error scraping slug=%r (%s→%s): %s",
+                    key, ci, co, exc, exc_info=True,
                 )
-            else:
-                logger.info(
-                    "fetch-now: %d price(s) for slug=%r (%s→%s)",
-                    len(snaps), key, check_in, check_out,
-                )
-        except Exception as exc:
-            logger.error(
-                "fetch-now: error scraping slug=%r (%s→%s): %s",
-                key, check_in, check_out, exc, exc_info=True,
-            )
-            errors.append(f"{key}: {exc}")
+                errors.append(f"{key} ({ci}): {exc}")
 
     await db.commit()
     return FetchNowResult(scraped=scraped, prices_found=prices_found, errors=errors)
@@ -205,29 +212,31 @@ async def get_history_all(
     if not key_to_name:
         return []
 
-    since = datetime.utcnow() - timedelta(days=days)
-    fetched_day = func.date(RateSnapshot.fetched_at).label("fetched_day")
+    today = date.today()
+    from_date = today + timedelta(days=1)
+    to_date = today + timedelta(days=days)
 
     result = await db.execute(
         select(
             RateSnapshot.hotel_booking_key,
-            fetched_day,
+            RateSnapshot.check_in_date,
             func.min(RateSnapshot.price).label("min_price"),
         )
         .where(
             RateSnapshot.hotel_booking_key.in_(list(key_to_name.keys())),
-            RateSnapshot.fetched_at >= since,
+            RateSnapshot.check_in_date >= from_date,
+            RateSnapshot.check_in_date <= to_date,
         )
         .group_by(
             RateSnapshot.hotel_booking_key,
-            func.date(RateSnapshot.fetched_at),
+            RateSnapshot.check_in_date,
         )
-        .order_by(func.date(RateSnapshot.fetched_at))
+        .order_by(RateSnapshot.check_in_date)
     )
 
     return [
         HistoryPoint(
-            date=row.fetched_day,
+            date=row.check_in_date,
             ota_code=key_to_name[row.hotel_booking_key],
             ota_name=key_to_name[row.hotel_booking_key],
             min_price=row.min_price,

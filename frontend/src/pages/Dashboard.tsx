@@ -25,7 +25,7 @@ export default function Dashboard() {
 
   const { data: comparison, isLoading: loadingComparison } = useComparison(checkIn, checkOut);
   const ownHotel = comparison.find((r) => r.is_own_hotel);
-  const { data: history, isLoading: loadingHistory } = useHistoryAll(30);
+  const { data: history, isLoading: loadingHistory } = useHistoryAll(7);
 
   const [fetching, setFetching] = useState(false);
   const [fetchMsg, setFetchMsg] = useState<{ ok: boolean; text: string } | null>(null);
@@ -36,14 +36,15 @@ export default function Dashboard() {
     try {
       const { data } = await ratesApi.fetchNow(
         format(checkIn, "yyyy-MM-dd"),
-        format(checkOut, "yyyy-MM-dd")
+        format(checkOut, "yyyy-MM-dd"),
+        7
       );
       if (data.errors.length > 0) {
         setFetchMsg({ ok: false, text: `Errori: ${data.errors.join(" | ")}` });
       } else {
         setFetchMsg({
           ok: true,
-          text: `Trovati ${data.prices_found} prezzi su ${data.scraped} hotel. Ricarica la pagina.`,
+          text: `Trovati ${data.prices_found} prezzi su ${data.scraped} scrape (7 date × hotel). Ricarica la pagina.`,
         });
       }
     } catch (e: unknown) {
@@ -179,10 +180,10 @@ export default function Dashboard() {
         <div className="lg:col-span-2">
           <div className="flex items-center justify-between mb-3 gap-3 flex-wrap">
             <h2 className="text-base font-semibold text-gray-800">
-              Storico prezzi (30 giorni)
+              Prezzi prossimi 7 giorni
             </h2>
             <span className="text-xs text-gray-400 bg-gray-50 border border-gray-200 rounded-full px-3 py-1">
-              Prezzo minimo per hotel
+              Prezzo minimo per data di check-in
             </span>
           </div>
           <div className="bg-white rounded-[14px] border border-gray-200 p-4">
