@@ -11,6 +11,11 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
     XOTELO_BASE_URL: str = "https://data.xotelo.com/api"
+    # "booking" (Playwright scraper) | "xotelo" (original API)
+    RATE_PROVIDER: str = "booking"
+    # Optional HTTP/SOCKS5 proxy for the scraper (residential recommended for production)
+    # Example: http://user:pass@host:port  or  socks5://user:pass@host:port
+    SCRAPER_PROXY: str = ""
     CORS_ORIGINS: str = "http://localhost:5173"
 
     @property

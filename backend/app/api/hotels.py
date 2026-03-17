@@ -12,7 +12,7 @@ from app.schemas.hotel import (
     HotelOut,
     HotelSearchResult,
 )
-from app.services.xotelo import xotelo_provider
+from app.services.rate_fetcher import _get_provider as _get_rate_provider
 
 router = APIRouter()
 
@@ -94,7 +94,7 @@ async def remove_competitor(competitor_id: uuid.UUID, current_user: CurrentUser,
 async def search_hotels(q: str, current_user: CurrentUser):
     if not q or len(q) < 2:
         raise HTTPException(status_code=400, detail="Query must be at least 2 characters.")
-    results = await xotelo_provider.search_hotel(q)
+    results = await _get_rate_provider().search_hotel(q)
     return [
         HotelSearchResult(
             hotel_key=r.hotel_key,

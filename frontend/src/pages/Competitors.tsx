@@ -186,15 +186,29 @@ export default function Competitors() {
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Xotelo Key</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Booking.com Slug
+              <a
+                href="https://www.booking.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                title="Come trovarlo: apri il tuo hotel su Booking.com → copia la parte tra /hotel/it/ e .html nell'URL"
+                className="ml-1.5 text-gray-400 hover:text-teal-600 text-xs font-normal"
+              >(?)</a>
+            </label>
             <input
               value={hotelKey}
               onChange={(e) => setHotelKey(e.target.value)}
               required
               disabled={isDemoMode}
-              placeholder="es. g187791-d237415"
+              placeholder="es. baglioni-bologna"
               className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-teal-400 disabled:bg-gray-50 disabled:text-gray-500"
             />
+            {!isDemoMode && (
+              <p className="text-xs text-gray-400 mt-1">
+                Apri il tuo hotel su Booking.com → copia la parte tra <code className="bg-gray-100 px-1 rounded">/hotel/it/</code> e <code className="bg-gray-100 px-1 rounded">.html</code> nell'URL
+              </p>
+            )}
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Stelle</label>
@@ -268,12 +282,12 @@ export default function Competitors() {
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Xotelo Key</label>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Booking.com Slug</label>
                 <input
                   value={compKey}
                   onChange={(e) => setCompKey(e.target.value)}
                   required
-                  placeholder={isDemoMode ? "Es. demo-key-new" : ""}
+                  placeholder={isDemoMode ? "Es. grand-hotel-milan" : "es. baglioni-bologna"}
                   className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-teal-400"
                 />
               </div>

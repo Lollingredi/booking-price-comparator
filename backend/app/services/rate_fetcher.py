@@ -6,7 +6,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from app.models import Hotel, HotelCompetitor, RateSnapshot
+from app.config import settings
 from app.services.xotelo import xotelo_provider
+
+
+def _get_provider():
+    """Return the active rate provider based on RATE_PROVIDER config."""
+    if settings.RATE_PROVIDER == "booking":
+        from app.services.booking_scraper import booking_provider
+        return booking_provider
+    return xotelo_provider
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +49,7 @@ async def fetch_and_save_rates(
 ) -> list[RateSnapshot]:
     """Fetch rates from Xotelo and persist them to the DB."""
     fetched_at = datetime.now(timezone.utc)
-    rate_results = await xotelo_provider.fetch_rates(
+    rate_results = await _get_provider().fetch_rates(
         hotel_key,
         check_in.isoformat(),
         check_out.isoformat(),
