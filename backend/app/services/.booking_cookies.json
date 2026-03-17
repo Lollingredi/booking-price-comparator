@@ -14,7 +14,7 @@
     "value": "e30",
     "domain": ".booking.com",
     "path": "/",
-    "expires": 1808325427.551545,
+    "expires": 1808328214.418026,
     "httpOnly": true,
     "secure": true,
     "sameSite": "Lax"
@@ -24,7 +24,7 @@
     "value": "e30",
     "domain": ".booking.com",
     "path": "/",
-    "expires": 1808325427.551433,
+    "expires": 1808328214.417798,
     "httpOnly": true,
     "secure": true,
     "sameSite": "Lax"
@@ -34,7 +34,7 @@
     "value": "0",
     "domain": ".booking.com",
     "path": "/",
-    "expires": 1789318001.080598,
+    "expires": 1789320226.861326,
     "httpOnly": true,
     "secure": true,
     "sameSite": "Lax"
@@ -54,7 +54,17 @@
     "value": "eyJib29raW5nX2dsb2JhbCI6eyJkYXRhX3N1YmplY3RfaWQiOiJmNzIwOTVkOC05YjVjLTRjNjAtYTBjMy1jODc1Y2Y2MGZjZGEiLCJzZXNzaW9ucyI6W119fQ",
     "domain": ".account.booking.com",
     "path": "/",
-    "expires": 1808325427.551254,
+    "expires": 1808328214.417983,
+    "httpOnly": true,
+    "secure": true,
+    "sameSite": "Lax"
+  },
+  {
+    "name": "bkng_sso_auth",
+    "value": "CAIQi4nT0gIaZghk+d02iYiZ/LLmhsQRl+flTyBnQ6CGcBZsIVDDJBndYBUzUhyKuXFRKQmnQLgi3UUHdjsszngmyGNY+x/3spGc+1ffpadAQMVA7sTiaEY9LaAhQ1/x9Ku7ul1R9V+Ql3q49yBclA==",
+    "domain": ".booking.com",
+    "path": "/",
+    "expires": 1808328212.260267,
     "httpOnly": true,
     "secure": true,
     "sameSite": "Lax"
@@ -64,67 +74,57 @@
     "value": "%5B%22e475993317aa2a385a884327cbb3b56b7ef71eed812655cd77fd1336f60c4f1f%22%2C6%5D",
     "domain": ".booking.com",
     "path": "/",
-    "expires": 1773767227.551652,
+    "expires": 1773770014.417931,
     "httpOnly": false,
     "secure": false,
-    "sameSite": "Lax"
-  },
-  {
-    "name": "bkng_sso_auth",
-    "value": "CAIQi4nT0gIaZlrDYAp17613KMtfAr7JjKFMxaZwliEqgn9lZv6oqhzYy3X80fl44Ad4/trTC05e+bPUntoecEslpIxB3mY8uiEucxZwqJABKjjDhgNyK+CJzy4AG5Ho08aP2aC6H4h2ZcKOm1oPlA==",
-    "domain": ".booking.com",
-    "path": "/",
-    "expires": 1808325970.461496,
-    "httpOnly": true,
-    "secure": true,
-    "sameSite": "Lax"
-  },
-  {
-    "name": "bk_nav_search",
-    "value": "%7B%22u%22%3A%22https%3A%2F%2Fwww.booking.com%2Fhotel%2Fit%2Fi-portici.it.html%3Fcheckin%3D2026-03-18%26checkout%3D2026-03-19%26group_adults%3D2%26no_rooms%3D1%22%2C%22t%22%3A1773766004987%2C%22p%22%3A%22propertyPage%22%7D",
-    "domain": ".booking.com",
-    "path": "/",
-    "expires": 1773767804.987804,
-    "httpOnly": false,
-    "secure": true,
     "sameSite": "Lax"
   },
   {
     "name": "g_state",
-    "value": "{\"i_l\":0,\"i_ll\":1773766005411,\"i_b\":\"GBAeER54lVoY6snd41dGjU3q8uRbaVL3iEi7tWOvgbk\",\"i_e\":{\"enable_itp_optimization\":0}}",
+    "value": "{\"i_l\":0,\"i_ll\":1773768229697,\"i_b\":\"hYID+dbo1Mu7U4G1zp7af5+OOrKEErYBWsduBLU40h8\",\"i_e\":{\"enable_itp_optimization\":0}}",
     "domain": ".booking.com",
     "path": "/",
-    "expires": 1789318005,
+    "expires": 1789320229,
     "httpOnly": false,
     "secure": false,
     "sameSite": "Lax"
   },
   {
+    "name": "bk_nav_search",
+    "value": "%7B%22u%22%3A%22https%3A%2F%2Fwww.booking.com%2Fhotel%2Fit%2Fi-portici.it.html%3Fcheckin%3D2026-03-17%26checkout%3D2026-03-18%26group_adults%3D2%26no_rooms%3D1%22%2C%22t%22%3A1773768230240%2C%22p%22%3A%22propertyPage%22%7D",
+    "domain": ".booking.com",
+    "path": "/",
+    "expires": 1773770030.240232,
+    "httpOnly": false,
+    "secure": true,
+    "sameSite": "Lax"
+  },
+  {
     "name": "OptanonConsent",
-    "value": "implicitConsentCountry=GDPR&implicitConsentDate=1773750929179&isGpcEnabled=0&datestamp=Tue+Mar+17+2026+17%3A46%3A53+GMT%2B0100+(Ora+standard+dell%E2%80%99Europa+centrale)&version=202501.2.0&browserGpcFlag=0&isIABGlobal=false&hosts=&consentId=66d5bd43-f2f3-4023-b571-e1d4b120248a&interactionCount=0&isAnonUser=1&landingPath=NotLandingPage&groups=C0001%3A1%2CC0002%3A0%2CC0004%3A0&AwaitingReconsent=false",
+    "value": "implicitConsentCountry=GDPR&implicitConsentDate=1773750929179&isGpcEnabled=0&datestamp=Tue+Mar+17+2026+18%3A23%3A59+GMT%2B0100+(Ora+standard+dell%E2%80%99Europa+centrale)&version=202501.2.0&browserGpcFlag=0&isIABGlobal=false&hosts=&consentId=66d5bd43-f2f3-4023-b571-e1d4b120248a&interactionCount=0&isAnonUser=1&landingPath=NotLandingPage&groups=C0001%3A1%2CC0002%3A0%2CC0004%3A0&AwaitingReconsent=false",
     "domain": ".www.booking.com",
     "path": "/",
-    "expires": 1789318013,
+    "expires": 1789320239,
     "httpOnly": false,
     "secure": true,
     "sameSite": "None"
   },
   {
     "name": "bkng",
-    "value": "11UmFuZG9tSVYkc2RlIyh9Yaa29%2F3xUOLbnmKTRaewPBuPIPxIfPZxVvFDd6m4feuv61l38JqHFy80vqLfbEGwVF3XZGHSzexKv8jCordVfLv%2F6gOW4zn5i8kU7XXOAi5szmDGPy9z%2Bo0a300Pysw6X7bdIwoHOj50dFm1J85qp5EqAV6ppYAe2AEPAVeZS%2B4YZ4lHH7f2k60%3D",
+    "value": "11UmFuZG9tSVYkc2RlIyh9Yaa29%2F3xUOLbca8KLfxLPeeH%2BFbivsiGngKKk50vskl9mu0yCgsScq%2FeyFkn4HO9h3rxcLe15fveGuu2u1MUVuSj2EKO2%2FNlgqeAHfc3vxEy3kSSjropz%2FfuYjOyO0hTwLQy93dO4wmg1RqxSe6N5%2Fbb5wv3BauYqO%2BgNWH9CRU2uyzT4bAItHY%3D",
     "domain": ".booking.com",
     "path": "/",
-    "expires": 1808326014.282604,
+    "expires": 1808328240.028234,
     "httpOnly": true,
     "secure": true,
     "sameSite": "None"
   },
   {
     "name": "aws-waf-token",
-    "value": "bb2c3e20-f69f-4344-9337-3b3ebc7a4f23:DgoApUZ06P9iAAAA:ub6AUextIc1EvpsO7FodLbNmkHS/fTt/Xo2Z0wrl1apq9czOZ+QQNcRVn0zv6xpmIAd3MoGoqeSbE7u3Ckk4FFvihw72PpwCNvsVZhsSq2/6yKzv15zx3gOzlyWZsz+muHR9Ww4IPd/I3WoAOegPr3jmTF6PpULQwZXLj+19pJ0TjQHG6W0RR3+9heIoYHhNMRerxHRQO7YnfSZdkhJXI/jE2IMHpACgSDJR8zQ6g+HgSUaIfQg6l6ftg5s1s1Wa+zkVKeXkCw==",
+    "value": "bb2c3e20-f69f-4344-9337-3b3ebc7a4f23:DgoArLV6BtgXAAAA:emHbFqMJJ9D4XLFLN682R2HZVIX5l/NWXBbt2sz3GccMRIcD26zv8vkENIs2Z2tfk8ZwqxqvNh8II1tIkjkjRc2EuXrgYFAFzdFQL4tthPBYtQjdYrma/PGuKcIWIr7c1pGBIU/3X1klrN5T7QLeop7RaJaoyZKgyaB1gIrphBwMrsydg+Frq6sOAvzzXWRNJJD0gVzIsarCgge5z2bcTFtzJz3ccnJ8vLel8JVts7Sfl7etfVDbFOL33zm7rfXiH9fchOllyA==",
     "domain": ".booking.com",
     "path": "/",
-    "expires": 1774111621,
+    "expires": 1774113847,
     "httpOnly": false,
     "secure": true,
     "sameSite": "None"
