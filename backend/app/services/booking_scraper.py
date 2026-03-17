@@ -289,12 +289,26 @@ async def _do_fetch_rates(
                 prices = await _extract_prices_from_dom(page)
 
             _save_cookies(await ctx.cookies())
+
+            # ── Debug: capture page state when no prices found ────────────────
+            if not prices:
+                try:
+                    title = await page.title()
+                    html = await page.content()
+                    debug_path = Path(__file__).parent / f"_debug_{hotel_key}.html"
+                    debug_path.write_text(html[:80_000], encoding="utf-8", errors="replace")
+                    snippet = html[:500].replace("\n", " ")
+                    logger.warning(
+                        "No prices found for slug=%s | title=%r | snippet=%s | saved=%s",
+                        hotel_key, title, snippet, debug_path,
+                    )
+                except Exception as dbg_exc:
+                    logger.warning("No prices found for slug=%s (debug failed: %s)", hotel_key, dbg_exc)
         finally:
             await ctx.close()
             await ctx.browser.close()
 
     if not prices:
-        logger.warning("No prices found for slug=%s", hotel_key)
         return []
 
     min_price = round(min(prices), 2)
