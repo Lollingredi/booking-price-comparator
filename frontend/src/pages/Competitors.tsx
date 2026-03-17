@@ -27,6 +27,10 @@ export default function Competitors() {
   const [compStars, setCompStars] = useState<number | "">(3);
   const [addingComp, setAddingComp] = useState(false);
 
+  // Inline slug editing
+  const [editingCompId, setEditingCompId] = useState<string | null>(null);
+  const [editingSlug, setEditingSlug] = useState("");
+
   useEffect(() => {
     if (isDemoMode) {
       setHotel(DEMO_HOTEL);
@@ -133,6 +137,47 @@ export default function Competitors() {
       setError("Errore nell'aggiunta del competitor.");
     } finally {
       setAddingComp(false);
+    }
+  };
+
+  const handleUpdateCompetitorSlug = async (comp: Competitor) => {
+    const newSlug = editingSlug.trim();
+    if (!newSlug || newSlug === comp.competitor_booking_key) {
+      setEditingCompId(null);
+      return;
+    }
+    if (isDemoMode) {
+      setHotel((prev) =>
+        prev
+          ? {
+              ...prev,
+              competitors: prev.competitors.map((c) =>
+                c.id === comp.id ? { ...c, competitor_booking_key: newSlug } : c
+              ),
+            }
+          : prev
+      );
+      setEditingCompId(null);
+      return;
+    }
+    try {
+      const { data: updated } = await hotelsApi.updateCompetitor(comp.id, {
+        competitor_booking_key: newSlug,
+      });
+      setHotel((prev) =>
+        prev
+          ? {
+              ...prev,
+              competitors: prev.competitors.map((c) =>
+                c.id === comp.id ? updated : c
+              ),
+            }
+          : prev
+      );
+    } catch {
+      setError("Errore nel salvataggio dello slug.");
+    } finally {
+      setEditingCompId(null);
     }
   };
 
@@ -299,14 +344,47 @@ export default function Competitors() {
           {hotel.competitors.length > 0 ? (
             <ul className="divide-y divide-gray-100">
               {hotel.competitors.map((comp) => (
-                <li key={comp.id} className="flex items-center justify-between py-3">
-                  <div>
+                <li key={comp.id} className="flex items-center justify-between py-3 gap-3">
+                  <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-gray-800">{comp.competitor_name}</p>
-                    <p className="text-xs font-mono text-gray-400">{comp.competitor_booking_key}</p>
+                    {editingCompId === comp.id ? (
+                      <div className="flex items-center gap-1 mt-1">
+                        <input
+                          autoFocus
+                          value={editingSlug}
+                          onChange={(e) => setEditingSlug(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") handleUpdateCompetitorSlug(comp);
+                            if (e.key === "Escape") setEditingCompId(null);
+                          }}
+                          className="w-full border border-teal-300 rounded px-2 py-0.5 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-teal-400"
+                        />
+                        <button
+                          onClick={() => handleUpdateCompetitorSlug(comp)}
+                          className="text-xs text-teal-600 hover:text-teal-800 font-medium px-1.5 py-0.5 shrink-0"
+                        >
+                          Salva
+                        </button>
+                        <button
+                          onClick={() => setEditingCompId(null)}
+                          className="text-xs text-gray-400 hover:text-gray-600 px-1 py-0.5 shrink-0"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => { setEditingCompId(comp.id); setEditingSlug(comp.competitor_booking_key); }}
+                        className="text-xs font-mono text-gray-400 hover:text-teal-600 hover:underline text-left"
+                        title="Clicca per modificare lo slug"
+                      >
+                        {comp.competitor_booking_key || <span className="italic">slug non impostato</span>}
+                      </button>
+                    )}
                   </div>
                   <button
                     onClick={() => handleRemoveCompetitor(comp)}
-                    className="text-xs text-red-500 hover:text-red-700 px-2 py-1"
+                    className="text-xs text-red-500 hover:text-red-700 px-2 py-1 shrink-0"
                   >
                     Rimuovi
                   </button>

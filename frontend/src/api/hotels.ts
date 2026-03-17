@@ -17,6 +17,9 @@ export const hotelsApi = {
     competitor_stars?: number | null;
   }) => apiClient.post<Competitor>("/api/hotels/competitors", data),
 
+  updateCompetitor: (id: string, data: { competitor_booking_key?: string; competitor_name?: string; competitor_stars?: number | null }) =>
+    apiClient.patch<Competitor>(`/api/hotels/competitors/${id}`, data),
+
   removeCompetitor: (id: string) =>
     apiClient.delete(`/api/hotels/competitors/${id}`),
 

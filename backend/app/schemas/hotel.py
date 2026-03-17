@@ -30,6 +30,12 @@ class CompetitorCreate(BaseModel):
     competitor_stars: int | None = None
 
 
+class CompetitorPatch(BaseModel):
+    competitor_booking_key: str | None = None
+    competitor_name: str | None = None
+    competitor_stars: int | None = None
+
+
 class CompetitorOut(BaseModel):
     id: uuid.UUID
     hotel_id: uuid.UUID

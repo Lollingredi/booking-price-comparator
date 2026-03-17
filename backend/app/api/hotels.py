@@ -8,6 +8,7 @@ from app.models.hotel import Hotel, HotelCompetitor
 from app.schemas.hotel import (
     CompetitorCreate,
     CompetitorOut,
+    CompetitorPatch,
     HotelCreate,
     HotelOut,
     HotelSearchResult,
@@ -66,6 +67,34 @@ async def add_competitor(payload: CompetitorCreate, current_user: CurrentUser, d
         competitor_stars=payload.competitor_stars,
     )
     db.add(competitor)
+    await db.flush()
+    return competitor
+
+
+@router.patch("/competitors/{competitor_id}", response_model=CompetitorOut)
+async def update_competitor(competitor_id: uuid.UUID, payload: CompetitorPatch, current_user: CurrentUser, db: DB):
+    result = await db.execute(select(Hotel).where(Hotel.user_id == current_user.id))
+    hotel = result.scalar_one_or_none()
+    if not hotel:
+        raise HTTPException(status_code=404, detail="Hotel not found.")
+
+    comp_result = await db.execute(
+        select(HotelCompetitor).where(
+            HotelCompetitor.id == competitor_id,
+            HotelCompetitor.hotel_id == hotel.id,
+        )
+    )
+    competitor = comp_result.scalar_one_or_none()
+    if not competitor:
+        raise HTTPException(status_code=404, detail="Competitor not found.")
+
+    if payload.competitor_booking_key is not None:
+        competitor.competitor_booking_key = payload.competitor_booking_key
+    if payload.competitor_name is not None:
+        competitor.competitor_name = payload.competitor_name
+    if payload.competitor_stars is not None:
+        competitor.competitor_stars = payload.competitor_stars
+
     await db.flush()
     return competitor
 
