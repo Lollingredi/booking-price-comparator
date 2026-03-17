@@ -1,8 +1,9 @@
-import { Navigate, Outlet } from "react-router-dom";
+import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 
 export default function ProtectedRoute() {
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, needsOnboarding, isDemoMode } = useAuth();
+  const location = useLocation();
 
   if (isLoading) {
     return (
@@ -12,5 +13,11 @@ export default function ProtectedRoute() {
     );
   }
 
-  return user ? <Outlet /> : <Navigate to="/login" replace />;
+  if (!user && !isDemoMode) return <Navigate to="/login" replace />;
+
+  if (!isDemoMode && needsOnboarding && location.pathname !== "/onboarding") {
+    return <Navigate to="/onboarding" replace />;
+  }
+
+  return <Outlet />;
 }

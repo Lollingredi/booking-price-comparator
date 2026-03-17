@@ -8,6 +8,7 @@ import Dashboard from "./pages/Dashboard";
 import Competitors from "./pages/Competitors";
 import Alerts from "./pages/Alerts";
 import DemoMap from "./pages/DemoMap";
+import OnboardingMap from "./pages/OnboardingMap";
 
 export default function App() {
   return (
@@ -18,6 +19,7 @@ export default function App() {
           <Route path="/register" element={<Register />} />
           <Route path="/demo/mappa" element={<DemoMap />} />
           <Route element={<ProtectedRoute />}>
+            <Route path="/onboarding" element={<OnboardingMap />} />
             <Route element={<Layout />}>
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/competitors" element={<Competitors />} />

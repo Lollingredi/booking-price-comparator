@@ -6,6 +6,7 @@ import React, {
   useState,
 } from "react";
 import { authApi } from "../api/auth";
+import { hotelsApi } from "../api/hotels";
 import type { User, ComparisonRow } from "../types";
 import { DEMO_USER, generateDemoComparisonForHotel, buildDemoHotelFromItaly } from "../demo/demoData";
 import type { ItalyHotel } from "../demo/italyHotels";
@@ -15,10 +16,12 @@ interface AuthContextValue {
   user: User | null;
   isLoading: boolean;
   isDemoMode: boolean;
+  needsOnboarding: boolean;
   demoComparison: ComparisonRow[];
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, full_name: string) => Promise<void>;
   loginDemo: (hotel?: ItalyHotel, competitors?: ItalyHotel[]) => void;
+  completeOnboarding: () => void;
   logout: () => void;
 }
 
@@ -28,14 +31,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isDemoMode, setIsDemoMode] = useState(false);
+  const [needsOnboarding, setNeedsOnboarding] = useState(false);
   const [demoComparison, setDemoComparison] = useState<ComparisonRow[]>([]);
 
   const fetchMe = useCallback(async () => {
     try {
       const { data } = await authApi.me();
       setUser(data);
+      try {
+        await hotelsApi.getMine();
+        setNeedsOnboarding(false);
+      } catch {
+        setNeedsOnboarding(true);
+      }
     } catch {
       setUser(null);
+      setNeedsOnboarding(false);
     }
   }, []);
 
@@ -76,18 +87,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  const completeOnboarding = useCallback(() => {
+    setNeedsOnboarding(false);
+  }, []);
+
   const logout = useCallback(() => {
     localStorage.removeItem("access_token");
     localStorage.removeItem("refresh_token");
     setUser(null);
     setIsDemoMode(false);
+    setNeedsOnboarding(false);
     setDemoComparison([]);
     (window as any).__demoHotel = undefined;
   }, []);
 
   return (
     <AuthContext.Provider
-      value={{ user, isLoading, isDemoMode, demoComparison, login, register, loginDemo, logout }}
+      value={{ user, isLoading, isDemoMode, needsOnboarding, demoComparison, login, register, loginDemo, completeOnboarding, logout }}
     >
       {children}
     </AuthContext.Provider>
