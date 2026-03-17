@@ -16,4 +16,11 @@ export const ratesApi = {
     apiClient.get<ComparisonRow[]>("/api/rates/comparison", {
       params: { check_in, check_out },
     }),
+
+  fetchNow: (check_in: string, check_out: string) =>
+    apiClient.post<{ scraped: number; prices_found: number; errors: string[] }>(
+      "/api/rates/fetch-now",
+      null,
+      { params: { check_in, check_out } }
+    ),
 };

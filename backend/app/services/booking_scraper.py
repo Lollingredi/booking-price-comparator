@@ -341,8 +341,8 @@ class BookingProvider(RateProvider):
             ]
 
         except Exception as exc:
-            logger.error("Error scraping slug=%s: %s", hotel_key, exc)
-            return []
+            logger.error("Error scraping slug=%s: %s", hotel_key, exc, exc_info=True)
+            raise  # propagate so the caller can surface the error
         finally:
             await ctx.close()
 

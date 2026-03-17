@@ -8,6 +8,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { useComparison, useHistory } from "../hooks/useRates";
 import { alertsApi } from "../api/alerts";
 import { hotelsApi } from "../api/hotels";
+import { ratesApi } from "../api/rates";
 import type { AlertLog, Hotel } from "../types";
 import { DEMO_ALERT_LOGS } from "../demo/demoData";
 
@@ -29,6 +30,33 @@ export default function Dashboard() {
     30
   );
 
+  const [fetching, setFetching] = useState(false);
+  const [fetchMsg, setFetchMsg] = useState<{ ok: boolean; text: string } | null>(null);
+
+  const handleFetchNow = async () => {
+    setFetching(true);
+    setFetchMsg(null);
+    try {
+      const { data } = await ratesApi.fetchNow(
+        format(checkIn, "yyyy-MM-dd"),
+        format(checkOut, "yyyy-MM-dd")
+      );
+      if (data.errors.length > 0) {
+        setFetchMsg({ ok: false, text: `Errori: ${data.errors.join(" | ")}` });
+      } else {
+        setFetchMsg({
+          ok: true,
+          text: `Trovati ${data.prices_found} prezzi su ${data.scraped} hotel. Ricarica la pagina.`,
+        });
+      }
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      setFetchMsg({ ok: false, text: `Errore: ${msg}` });
+    } finally {
+      setFetching(false);
+    }
+  };
+
   const [alertLogs, setAlertLogs] = useState<AlertLog[]>([]);
   useEffect(() => {
     if (isDemoMode) {
@@ -46,6 +74,7 @@ export default function Dashboard() {
     .sort((a, b) => Number(a.min_price) - Number(b.min_price))[0];
 
   const hasFakeKey = !isDemoMode && myHotel?.xotelo_hotel_key?.startsWith("demo_");
+  const hasNoKey = !isDemoMode && myHotel && !myHotel.xotelo_hotel_key;
 
   return (
     <div className="space-y-8">
@@ -53,10 +82,10 @@ export default function Dashboard() {
         <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 flex items-start gap-3">
           <span className="text-amber-500 text-lg shrink-0 mt-0.5">⚠️</span>
           <div className="text-sm text-amber-800">
-            <span className="font-semibold">Chiave Xotelo non valida</span> — il tuo hotel usa ancora una chiave demo ({myHotel?.xotelo_hotel_key}).
+            <span className="font-semibold">Booking.com Slug non valido</span> — il tuo hotel usa ancora una chiave demo ({myHotel?.xotelo_hotel_key}).
             I prezzi non possono essere recuperati.{" "}
             <a href="/competitors" className="underline font-medium hover:text-amber-900">
-              Aggiorna la Xotelo Key nelle impostazioni →
+              Aggiorna il Booking.com Slug nelle impostazioni →
             </a>
           </div>
         </div>
@@ -102,9 +131,33 @@ export default function Dashboard() {
 
       {/* Rate table */}
       <div>
-        <h2 className="text-base font-semibold text-gray-800 mb-3">
-          Confronto prezzi OTA
-        </h2>
+        <div className="flex items-center justify-between mb-3 gap-3 flex-wrap">
+          <h2 className="text-base font-semibold text-gray-800">Confronto prezzi OTA</h2>
+          {!isDemoMode && (
+            <button
+              onClick={handleFetchNow}
+              disabled={fetching}
+              className="inline-flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-lg border border-teal-300 text-teal-700 hover:bg-teal-50 disabled:opacity-50 transition-colors"
+            >
+              {fetching ? (
+                <>
+                  <svg className="animate-spin h-3.5 w-3.5" viewBox="0 0 24 24" fill="none">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+                  </svg>
+                  Scraping...
+                </>
+              ) : (
+                "Aggiorna prezzi"
+              )}
+            </button>
+          )}
+        </div>
+        {fetchMsg && (
+          <div className={`mb-3 px-3 py-2 rounded-lg text-sm ${fetchMsg.ok ? "bg-teal-50 text-teal-800 border border-teal-200" : "bg-red-50 text-red-800 border border-red-200"}`}>
+            {fetchMsg.text}
+          </div>
+        )}
         {loadingComparison ? (
           <div className="text-center py-8 text-gray-400">Caricamento...</div>
         ) : (

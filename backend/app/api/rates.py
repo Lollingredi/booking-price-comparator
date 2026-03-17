@@ -2,15 +2,65 @@ from datetime import date, timedelta
 from decimal import Decimal
 
 from fastapi import APIRouter, HTTPException, Query
+from pydantic import BaseModel
 from sqlalchemy import func, select
 
 from app.api.deps import CurrentUser, DB
 from app.models.hotel import Hotel, HotelCompetitor
 from app.models.rate import RateSnapshot
 from app.schemas.rate import ComparisonRow, HistoryPoint, HotelRates, RateSnapshotOut
-from app.services.rate_fetcher import fetch_rates_if_stale
+from app.services.rate_fetcher import fetch_and_save_rates, fetch_rates_if_stale
 
 router = APIRouter()
+
+
+class FetchNowResult(BaseModel):
+    scraped: int
+    prices_found: int
+    errors: list[str]
+
+
+@router.post("/fetch-now", response_model=FetchNowResult)
+async def fetch_now(
+    current_user: CurrentUser,
+    db: DB,
+    check_in: date = Query(...),
+    check_out: date = Query(...),
+):
+    """
+    Manually trigger a price scrape for the user's hotel + all active competitors.
+    Returns a summary with how many hotels were scraped and how many prices were saved.
+    Useful to bootstrap data or diagnose scraping issues.
+    """
+    result = await db.execute(select(Hotel).where(Hotel.user_id == current_user.id))
+    hotel = result.scalar_one_or_none()
+    if not hotel:
+        raise HTTPException(status_code=404, detail="Hotel not configured.")
+
+    comps_result = await db.execute(
+        select(HotelCompetitor).where(
+            HotelCompetitor.hotel_id == hotel.id,
+            HotelCompetitor.is_active == True,
+        )
+    )
+    competitors = comps_result.scalars().all()
+
+    keys = [hotel.xotelo_hotel_key] + [c.competitor_xotelo_key for c in competitors]
+
+    scraped = 0
+    prices_found = 0
+    errors: list[str] = []
+
+    for key in keys:
+        try:
+            snaps = await fetch_and_save_rates(db, key, check_in, check_out)
+            scraped += 1
+            prices_found += len(snaps)
+        except Exception as exc:
+            errors.append(f"{key}: {exc}")
+
+    await db.commit()
+    return FetchNowResult(scraped=scraped, prices_found=prices_found, errors=errors)
 
 
 @router.get("/current", response_model=list[HotelRates])
