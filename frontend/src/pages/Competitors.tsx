@@ -88,6 +88,12 @@ export default function Competitors() {
     );
   };
 
+  const handleLiveHotelSelect = (r: HotelSearchResult) => {
+    setHotelName(r.name);
+    setHotelKey(r.hotel_key);
+    if (r.city) setCity(r.city);
+  };
+
   const handleCompSelect = (r: HotelSearchResult) => {
     setCompName(r.name);
     setCompKey(r.hotel_key);
@@ -161,8 +167,12 @@ export default function Competitors() {
       <form onSubmit={handleSaveHotel} className="bg-white rounded-[14px] border border-gray-200 p-6 space-y-4">
         <h2 className="font-semibold text-gray-800">Impostazioni hotel</h2>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Cerca il tuo hotel</label>
-          <DemoHotelSearch onSelect={handleDemoHotelSelect} placeholder="Es. Hotel Bellavista Roma..." />
+          <label className="block text-sm font-medium text-gray-700 mb-1">Cerca il tuo hotel su Booking.com</label>
+          {isDemoMode ? (
+            <DemoHotelSearch onSelect={handleDemoHotelSelect} placeholder="Es. Hotel Bellavista Roma..." />
+          ) : (
+            <HotelSearch onSelect={handleLiveHotelSelect} placeholder="Es. Emma Hotel Bologna Fiera..." />
+          )}
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div>
@@ -204,11 +214,11 @@ export default function Competitors() {
               placeholder="es. baglioni-bologna"
               className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-teal-400 disabled:bg-gray-50 disabled:text-gray-500"
             />
-            {!isDemoMode && (
-              <p className="text-xs text-gray-400 mt-1">
-                Apri il tuo hotel su Booking.com → copia la parte tra <code className="bg-gray-100 px-1 rounded">/hotel/it/</code> e <code className="bg-gray-100 px-1 rounded">.html</code> nell'URL
-              </p>
-            )}
+            <p className="text-xs text-gray-400 mt-1">
+              {isDemoMode
+                ? "Slug demo — non modificabile"
+                : "Auto-compilato dalla ricerca, oppure inserisci manualmente la parte tra /hotel/it/ e .html"}
+            </p>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Stelle</label>
