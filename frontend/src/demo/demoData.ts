@@ -161,6 +161,34 @@ export const DEMO_COMPARISON: ComparisonRow[] = [
   },
 ];
 
+export function generateDemoHistoryAll(): HistoryPoint[] {
+  const today = new Date();
+  const points: HistoryPoint[] = [];
+  const hotels = [
+    { code: "Hotel Bellavista Roma", base: 140 },
+    { code: "Grand Hotel Ritz", base: 136 },
+    { code: "Roma Central Suites", base: 185 },
+    { code: "Palazzo Colosseo Hotel", base: 207 },
+  ];
+
+  for (let i = 29; i >= 0; i--) {
+    const date = format(subDays(today, i), "yyyy-MM-dd");
+    const weekly = Math.sin((i / 7) * 2 * Math.PI) * 8;
+    const trend = (29 - i) * 0.3;
+
+    for (const h of hotels) {
+      const noise = (Math.random() - 0.5) * 6;
+      points.push({
+        date,
+        ota_code: h.code,
+        ota_name: h.code,
+        min_price: Math.round(h.base + trend + weekly + noise),
+      });
+    }
+  }
+  return points;
+}
+
 export function generateDemoHistory(): HistoryPoint[] {
   const today = new Date();
   const points: HistoryPoint[] = [];

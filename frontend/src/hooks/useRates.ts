@@ -6,6 +6,7 @@ import { useAuth } from "../contexts/AuthContext";
 import {
   DEMO_COMPARISON,
   generateDemoHistory,
+  generateDemoHistoryAll,
 } from "../demo/demoData";
 
 export function useCurrentRates(checkIn: Date, checkOut: Date) {
@@ -63,6 +64,37 @@ export function useComparison(checkIn: Date, checkOut: Date) {
       setIsLoading(false);
     }
   }, [checkIn, checkOut, isDemoMode, demoComparison]);
+
+  useEffect(() => {
+    fetch();
+  }, [fetch]);
+
+  return { data, isLoading, error, refetch: fetch };
+}
+
+export function useHistoryAll(days = 30) {
+  const { isDemoMode } = useAuth();
+  const demoHistory = useMemo(() => generateDemoHistoryAll(), []);
+  const [data, setData] = useState<HistoryPoint[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetch = useCallback(async () => {
+    if (isDemoMode) {
+      setData(demoHistory);
+      return;
+    }
+    setIsLoading(true);
+    setError(null);
+    try {
+      const { data: pts } = await ratesApi.getHistoryAll(days);
+      setData(pts);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Errore nel caricamento storico");
+    } finally {
+      setIsLoading(false);
+    }
+  }, [days, isDemoMode, demoHistory]);
 
   useEffect(() => {
     fetch();

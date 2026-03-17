@@ -5,7 +5,7 @@ import MetricCard from "../components/MetricCard";
 import PriceChart from "../components/PriceChart";
 import RateTable from "../components/RateTable";
 import { useAuth } from "../contexts/AuthContext";
-import { useComparison, useHistory } from "../hooks/useRates";
+import { useComparison, useHistoryAll } from "../hooks/useRates";
 import { alertsApi } from "../api/alerts";
 import { hotelsApi } from "../api/hotels";
 import { ratesApi } from "../api/rates";
@@ -25,10 +25,7 @@ export default function Dashboard() {
 
   const { data: comparison, isLoading: loadingComparison } = useComparison(checkIn, checkOut);
   const ownHotel = comparison.find((r) => r.is_own_hotel);
-  const { data: history, isLoading: loadingHistory } = useHistory(
-    ownHotel?.hotel_key ?? "",
-    30
-  );
+  const { data: history, isLoading: loadingHistory } = useHistoryAll(30);
 
   const [fetching, setFetching] = useState(false);
   const [fetchMsg, setFetchMsg] = useState<{ ok: boolean; text: string } | null>(null);
@@ -185,7 +182,7 @@ export default function Dashboard() {
               Storico prezzi (30 giorni)
             </h2>
             <span className="text-xs text-gray-400 bg-gray-50 border border-gray-200 rounded-full px-3 py-1">
-              Prezzo minimo rilevato sulle piattaforme
+              Prezzo minimo per hotel
             </span>
           </div>
           <div className="bg-white rounded-[14px] border border-gray-200 p-4">

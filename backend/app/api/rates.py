@@ -179,6 +179,61 @@ async def get_history(
     ]
 
 
+@router.get("/history/all", response_model=list[HistoryPoint])
+async def get_history_all(
+    current_user: CurrentUser,
+    db: DB,
+    days: int = Query(default=30, ge=1, le=365),
+):
+    """Return price history for all hotels (own + competitors), one series per hotel name."""
+    hotel_result = await db.execute(select(Hotel).where(Hotel.user_id == current_user.id))
+    hotel = hotel_result.scalar_one_or_none()
+    if not hotel:
+        return []
+
+    await db.refresh(hotel, ["competitors"])
+
+    # Map booking_key -> display_name
+    key_to_name: dict[str, str] = {}
+    if hotel.booking_key:
+        key_to_name[hotel.booking_key] = hotel.name
+    for comp in hotel.competitors:
+        if comp.competitor_booking_key:
+            key_to_name[comp.competitor_booking_key] = comp.competitor_name
+
+    if not key_to_name:
+        return []
+
+    since = date.today() - timedelta(days=days)
+
+    result = await db.execute(
+        select(
+            RateSnapshot.hotel_booking_key,
+            RateSnapshot.check_in_date,
+            func.min(RateSnapshot.price).label("min_price"),
+        )
+        .where(
+            RateSnapshot.hotel_booking_key.in_(list(key_to_name.keys())),
+            RateSnapshot.check_in_date >= since,
+        )
+        .group_by(
+            RateSnapshot.hotel_booking_key,
+            RateSnapshot.check_in_date,
+        )
+        .order_by(RateSnapshot.check_in_date)
+    )
+
+    return [
+        HistoryPoint(
+            date=row.check_in_date,
+            ota_code=key_to_name[row.hotel_booking_key],
+            ota_name=key_to_name[row.hotel_booking_key],
+            min_price=row.min_price,
+        )
+        for row in result.all()
+    ]
+
+
 @router.get("/comparison", response_model=list[ComparisonRow])
 async def get_comparison(
     current_user: CurrentUser,
