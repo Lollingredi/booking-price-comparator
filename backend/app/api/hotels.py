@@ -90,6 +90,23 @@ async def remove_competitor(competitor_id: uuid.UUID, current_user: CurrentUser,
     await db.delete(competitor)
 
 
+@router.delete("/mine", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_my_hotel(current_user: CurrentUser, db: DB):
+    """Delete the user's hotel and all associated competitors, resetting their configuration."""
+    result = await db.execute(select(Hotel).where(Hotel.user_id == current_user.id))
+    hotel = result.scalar_one_or_none()
+    if not hotel:
+        raise HTTPException(status_code=404, detail="Hotel not found.")
+
+    comps_result = await db.execute(
+        select(HotelCompetitor).where(HotelCompetitor.hotel_id == hotel.id)
+    )
+    for comp in comps_result.scalars().all():
+        await db.delete(comp)
+
+    await db.delete(hotel)
+
+
 @router.get("/search", response_model=list[HotelSearchResult])
 async def search_hotels(q: str, current_user: CurrentUser):
     if not q or len(q) < 2:

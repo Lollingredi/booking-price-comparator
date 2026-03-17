@@ -2,12 +2,18 @@ import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 
 export default function Layout() {
-  const { user, logout, isDemoMode } = useAuth();
+  const { user, logout, isDemoMode, resetOnboarding } = useAuth();
   const navigate = useNavigate();
 
   const handleLogout = () => {
     logout();
     navigate("/login");
+  };
+
+  const handleReset = async () => {
+    if (!window.confirm("Sei sicuro? Verranno eliminati il tuo hotel e tutti i competitor configurati, e potrai ricominciare dalla selezione sulla mappa.")) return;
+    await resetOnboarding();
+    navigate("/onboarding");
   };
 
   const navLinkClass = ({ isActive }: { isActive: boolean }) =>
@@ -53,6 +59,15 @@ export default function Layout() {
           </nav>
           <div className="flex items-center gap-3">
             <span className="text-sm text-gray-500 hidden sm:block">{user?.email}</span>
+            {!isDemoMode && (
+              <button
+                onClick={handleReset}
+                className="text-sm text-gray-500 hover:text-teal-700 px-3 py-1.5 border border-gray-200 rounded-lg hover:bg-teal-50 hover:border-teal-200 transition-colors"
+                title="Elimina la configurazione attuale e ricomincia dalla scelta dell'hotel"
+              >
+                Cambia hotel
+              </button>
+            )}
             <button
               onClick={handleLogout}
               className="text-sm text-gray-600 hover:text-gray-900 px-3 py-1.5 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"

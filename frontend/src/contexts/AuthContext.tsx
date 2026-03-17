@@ -22,6 +22,7 @@ interface AuthContextValue {
   register: (email: string, password: string, full_name: string) => Promise<void>;
   loginDemo: (hotel?: ItalyHotel, competitors?: ItalyHotel[]) => void;
   completeOnboarding: () => void;
+  resetOnboarding: () => Promise<void>;
   logout: () => void;
 }
 
@@ -91,6 +92,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setNeedsOnboarding(false);
   }, []);
 
+  const resetOnboarding = useCallback(async () => {
+    try {
+      await hotelsApi.deleteMine();
+    } catch { /* hotel may already be absent */ }
+    setNeedsOnboarding(true);
+  }, []);
+
   const logout = useCallback(() => {
     localStorage.removeItem("access_token");
     localStorage.removeItem("refresh_token");
@@ -103,7 +111,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, isLoading, isDemoMode, needsOnboarding, demoComparison, login, register, loginDemo, completeOnboarding, logout }}
+      value={{ user, isLoading, isDemoMode, needsOnboarding, demoComparison, login, register, loginDemo, completeOnboarding, resetOnboarding, logout }}
     >
       {children}
     </AuthContext.Provider>
