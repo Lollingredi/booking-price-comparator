@@ -76,12 +76,6 @@ export default function Competitors() {
     }
   };
 
-  const handleHotelSelect = (r: HotelSearchResult) => {
-    setHotelName(r.name);
-    setHotelKey(r.hotel_key);
-    if (r.city) setCity(r.city);
-  };
-
   const handleDemoHotelSelect = (h: ItalyHotel) => {
     setHotelName(h.name);
     setHotelKey(h.xoteloKey);
@@ -168,11 +162,7 @@ export default function Competitors() {
         <h2 className="font-semibold text-gray-800">Impostazioni hotel</h2>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Cerca il tuo hotel</label>
-          {isDemoMode ? (
-            <DemoHotelSearch onSelect={handleDemoHotelSelect} placeholder="Es. Hotel Bellavista Roma..." />
-          ) : (
-            <HotelSearch onSelect={handleHotelSelect} placeholder="Es. Hotel Bellavista Roma..." />
-          )}
+          <DemoHotelSearch onSelect={handleDemoHotelSelect} placeholder="Es. Hotel Bellavista Roma..." />
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div>
