@@ -202,6 +202,7 @@ export default function OnboardingMap() {
   const [mobileView, setMobileView]                       = useState<"map" | "list">("map");
   const [loadingSteps, setLoadingSteps]                   = useState<string[]>([]);
   const [loadingStep, setLoadingStep]                     = useState<number>(-1);
+  const [stepDetails, setStepDetails]                     = useState<(string | null)[]>([]);
   const [saveError, setSaveError]                         = useState<string | null>(null);
 
   const allCompetitors = useMemo(
@@ -251,7 +252,11 @@ export default function OnboardingMap() {
       "Raccolta prezzi in tempo reale",
     ];
     setLoadingSteps(steps);
+    setStepDetails(new Array(steps.length).fill(null));
     setLoadingStep(0);
+
+    const updateDetail = (i: number, detail: string) =>
+      setStepDetails((prev) => { const n = [...prev]; n[i] = detail; return n; });
 
     try {
       // Step 0: search slug for main hotel + save
@@ -260,6 +265,7 @@ export default function OnboardingMap() {
         const res = await hotelsApi.search(selected.name);
         mainSlug = res.data[0]?.booking_key ?? "";
       } catch { /* keep empty on search failure */ }
+      updateDetail(0, mainSlug ? `slug: ${mainSlug}` : "⚠ nessun slug trovato");
       await hotelsApi.createOrUpdate({
         name: selected.name,
         booking_key: mainSlug,
@@ -276,6 +282,7 @@ export default function OnboardingMap() {
           const res = await hotelsApi.search(comp.name);
           slug = res.data[0]?.booking_key ?? "";
         } catch { /* keep empty on search failure */ }
+        updateDetail(i + 1, slug ? `slug: ${slug}` : "⚠ nessun slug trovato");
         await hotelsApi.addCompetitor({
           competitor_name: comp.name,
           competitor_booking_key: slug,
@@ -291,14 +298,25 @@ export default function OnboardingMap() {
       dayAfter.setDate(dayAfter.getDate() + 2);
       const fmt = (d: Date) => d.toISOString().slice(0, 10);
       try {
-        await ratesApi.fetchNow(fmt(tomorrow), fmt(dayAfter));
-      } catch { /* non-blocking: dashboard will show empty state */ }
+        const fetchResult = await ratesApi.fetchNow(fmt(tomorrow), fmt(dayAfter));
+        const { prices_found, errors } = fetchResult.data;
+        if (errors.length > 0) {
+          updateDetail(steps.length - 1, `✗ ${errors.length} error${errors.length === 1 ? "e" : "i"}: ${errors[0]}`);
+        } else if (prices_found === 0) {
+          updateDetail(steps.length - 1, "⚠ nessun prezzo trovato — slug forse errato");
+        } else {
+          updateDetail(steps.length - 1, `${prices_found} prezzo${prices_found === 1 ? "" : "i"} trovato${prices_found === 1 ? "" : "i"}`);
+        }
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err);
+        updateDetail(steps.length - 1, `✗ ${msg}`);
+      }
 
       setLoadingStep(steps.length); // done
       setTimeout(() => {
         completeOnboarding();
         navigate("/dashboard");
-      }, 700);
+      }, 1200);
     } catch {
       setLoadingStep(-1);
       setSaveError("Errore durante il salvataggio. Riprova.");
@@ -310,7 +328,7 @@ export default function OnboardingMap() {
   return (
     <div className="h-screen overflow-hidden flex flex-col bg-gray-50">
       {loadingStep >= 0 && (
-        <StartupLoader steps={loadingSteps} currentIndex={loadingStep} />
+        <StartupLoader steps={loadingSteps} currentIndex={loadingStep} stepDetails={stepDetails} />
       )}
 
       {/* Header */}

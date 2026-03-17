@@ -1,3 +1,4 @@
+import logging
 from datetime import date, timedelta
 from decimal import Decimal
 
@@ -11,6 +12,7 @@ from app.models.rate import RateSnapshot
 from app.schemas.rate import ComparisonRow, HistoryPoint, HotelRates, RateSnapshotOut
 from app.services.rate_fetcher import fetch_and_save_rates, fetch_rates_if_stale
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
@@ -48,6 +50,12 @@ async def fetch_now(
         if k and k.strip()
     ]
 
+    if not keys:
+        logger.warning(
+            "fetch-now: no booking keys configured for user %s (hotel=%r)",
+            current_user.id, hotel.name,
+        )
+
     scraped = 0
     prices_found = 0
     errors: list[str] = []
@@ -57,7 +65,21 @@ async def fetch_now(
             snaps = await fetch_and_save_rates(db, key, check_in, check_out)
             scraped += 1
             prices_found += len(snaps)
+            if len(snaps) == 0:
+                logger.warning(
+                    "fetch-now: no prices found for slug=%r (%s→%s) — slug may be incorrect",
+                    key, check_in, check_out,
+                )
+            else:
+                logger.info(
+                    "fetch-now: %d price(s) for slug=%r (%s→%s)",
+                    len(snaps), key, check_in, check_out,
+                )
         except Exception as exc:
+            logger.error(
+                "fetch-now: error scraping slug=%r (%s→%s): %s",
+                key, check_in, check_out, exc, exc_info=True,
+            )
             errors.append(f"{key}: {exc}")
 
     await db.commit()

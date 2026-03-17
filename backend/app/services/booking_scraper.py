@@ -328,7 +328,7 @@ async def _do_search_hotel(query: str, proxy: str | None) -> list[HotelSearchRes
             await asyncio.sleep(_jitter(1.5, 3.0))
 
             cards = await page.query_selector_all("[data-testid='property-card']")
-            for card in cards[:8]:
+            for idx, card in enumerate(cards[:8]):
                 try:
                     link_el = await card.query_selector("a[data-testid='title-link']")
                     name_el = await card.query_selector("[data-testid='title']")
@@ -340,14 +340,24 @@ async def _do_search_hotel(query: str, proxy: str | None) -> list[HotelSearchRes
                     addr = (await addr_el.inner_text()).strip() if addr_el else None
                     m = re.search(r"/hotel/\w+/([^?#]+?)\.html", href)
                     if not m:
+                        logger.debug("search_hotel: query=%r card[%d] href=%r — no slug match", query, idx, href[:120])
                         continue
                     slug = m.group(1)
+                    logger.info("search_hotel: query=%r [%d] slug=%r name=%r", query, idx, slug, name)
                     results.append(HotelSearchResult(hotel_key=slug, name=name, address=addr, city=addr))
-                except Exception:
+                except Exception as card_exc:
+                    logger.debug("search_hotel: query=%r card[%d] parse error: %s", query, idx, card_exc)
                     continue
 
             _save_cookies(await ctx.cookies())
-            logger.info("search_hotel('%s') → %d results", query, len(results))
+            if results:
+                logger.info("search_hotel('%s') → %d result(s), first slug=%r", query, len(results), results[0].hotel_key)
+            else:
+                page_title = await page.title()
+                logger.warning(
+                    "search_hotel: no results for query=%r | page title=%r | cards found=%d",
+                    query, page_title, len(cards),
+                )
         except Exception as exc:
             logger.error("search_hotel error for '%s': %s", query, exc)
         finally:
