@@ -1,0 +1,458 @@
+[
+  {
+    "id": "bo01",
+    "name": "I Portici Hotel Bologna",
+    "city": "Bologna",
+    "xoteloKey": null,
+    "matchedName": null,
+    "status": "NOT_FOUND"
+  },
+  {
+    "id": "bo02",
+    "name": "Grand Hotel Majestic",
+    "city": "Bologna",
+    "xoteloKey": null,
+    "matchedName": null,
+    "status": "NOT_FOUND"
+  },
+  {
+    "id": "bo03",
+    "name": "Hotel Commercianti",
+    "city": "Bologna",
+    "xoteloKey": null,
+    "matchedName": null,
+    "status": "NOT_FOUND"
+  },
+  {
+    "id": "bo04",
+    "name": "Hotel Corona d'Oro",
+    "city": "Bologna",
+    "xoteloKey": null,
+    "matchedName": null,
+    "status": "NOT_FOUND"
+  },
+  {
+    "id": "bo05",
+    "name": "NH Bologna de la Gare",
+    "city": "Bologna",
+    "xoteloKey": null,
+    "matchedName": null,
+    "status": "NOT_FOUND"
+  },
+  {
+    "id": "bo06",
+    "name": "Hotel Metropolitan Bologna",
+    "city": "Bologna",
+    "xoteloKey": null,
+    "matchedName": null,
+    "status": "NOT_FOUND"
+  },
+  {
+    "id": "bo07",
+    "name": "Hotel Baglioni Bologna",
+    "city": "Bologna",
+    "xoteloKey": null,
+    "matchedName": null,
+    "status": "NOT_FOUND"
+  },
+  {
+    "id": "bo08",
+    "name": "Starhotels Excelsior",
+    "city": "Bologna",
+    "xoteloKey": null,
+    "matchedName": null,
+    "status": "NOT_FOUND"
+  },
+  {
+    "id": "bo09",
+    "name": "Hotel Amadeus Bologna",
+    "city": "Bologna",
+    "xoteloKey": null,
+    "matchedName": null,
+    "status": "NOT_FOUND"
+  },
+  {
+    "id": "bo10",
+    "name": "Hotel Touring Bologna",
+    "city": "Bologna",
+    "xoteloKey": null,
+    "matchedName": null,
+    "status": "NOT_FOUND"
+  },
+  {
+    "id": "bo11",
+    "name": "Hotel Porta San Mamolo",
+    "city": "Bologna",
+    "xoteloKey": null,
+    "matchedName": null,
+    "status": "NOT_FOUND"
+  },
+  {
+    "id": "bo12",
+    "name": "Albergo delle Drapperie",
+    "city": "Bologna",
+    "xoteloKey": null,
+    "matchedName": null,
+    "status": "NOT_FOUND"
+  },
+  {
+    "id": "bo13",
+    "name": "Hotel Re Enzo",
+    "city": "Bologna",
+    "xoteloKey": null,
+    "matchedName": null,
+    "status": "NOT_FOUND"
+  },
+  {
+    "id": "bo14",
+    "name": "Hotel Aemilia Bologna",
+    "city": "Bologna",
+    "xoteloKey": null,
+    "matchedName": null,
+    "status": "NOT_FOUND"
+  },
+  {
+    "id": "bo15",
+    "name": "Hotel Roma Bologna",
+    "city": "Bologna",
+    "xoteloKey": null,
+    "matchedName": null,
+    "status": "NOT_FOUND"
+  },
+  {
+    "id": "bo16",
+    "name": "Il Convento dei Fiori di Seta",
+    "city": "Bologna",
+    "xoteloKey": null,
+    "matchedName": null,
+    "status": "NOT_FOUND"
+  },
+  {
+    "id": "bo17",
+    "name": "NH Bologna Villanova",
+    "city": "Bologna",
+    "xoteloKey": null,
+    "matchedName": null,
+    "status": "NOT_FOUND"
+  },
+  {
+    "id": "bo18",
+    "name": "Unaway Hotel Bologna Fiera",
+    "city": "Bologna",
+    "xoteloKey": null,
+    "matchedName": null,
+    "status": "NOT_FOUND"
+  },
+  {
+    "id": "bo19",
+    "name": "Bologna Airport Hotel",
+    "city": "Bologna",
+    "xoteloKey": null,
+    "matchedName": null,
+    "status": "NOT_FOUND"
+  },
+  {
+    "id": "bo20",
+    "name": "Mercure Bologna Airport",
+    "city": "Calderara di Reno",
+    "xoteloKey": null,
+    "matchedName": null,
+    "status": "NOT_FOUND"
+  },
+  {
+    "id": "bo21",
+    "name": "Novotel Bologna Aeroporto",
+    "city": "Calderara di Reno",
+    "xoteloKey": null,
+    "matchedName": null,
+    "status": "NOT_FOUND"
+  },
+  {
+    "id": "bo22",
+    "name": "Holiday Inn Bologna Aeroporto",
+    "city": "Calderara di Reno",
+    "xoteloKey": null,
+    "matchedName": null,
+    "status": "NOT_FOUND"
+  },
+  {
+    "id": "bo23",
+    "name": "Hotel Calderara",
+    "city": "Calderara di Reno",
+    "xoteloKey": null,
+    "matchedName": null,
+    "status": "NOT_FOUND"
+  },
+  {
+    "id": "bo24",
+    "name": "Hotel Granarolo",
+    "city": "Granarolo dell'Emilia",
+    "xoteloKey": null,
+    "matchedName": null,
+    "status": "NOT_FOUND"
+  },
+  {
+    "id": "bo25",
+    "name": "Albergo La Pineta Granarolo",
+    "city": "Granarolo dell'Emilia",
+    "xoteloKey": null,
+    "matchedName": null,
+    "status": "NOT_FOUND"
+  },
+  {
+    "id": "bo26",
+    "name": "Hotel Villa Granarolo",
+    "city": "Granarolo dell'Emilia",
+    "xoteloKey": null,
+    "matchedName": null,
+    "status": "NOT_FOUND"
+  },
+  {
+    "id": "bo40",
+    "name": "Emma Hotel Bologna Fiera",
+    "city": "Granarolo dell'Emilia",
+    "xoteloKey": null,
+    "matchedName": null,
+    "status": "NOT_FOUND"
+  },
+  {
+    "id": "bo27",
+    "name": "Hotel San Lazzaro",
+    "city": "San Lazzaro di Savena",
+    "xoteloKey": null,
+    "matchedName": null,
+    "status": "NOT_FOUND"
+  },
+  {
+    "id": "bo28",
+    "name": "Villa Azzurra San Lazzaro",
+    "city": "San Lazzaro di Savena",
+    "xoteloKey": null,
+    "matchedName": null,
+    "status": "NOT_FOUND"
+  },
+  {
+    "id": "bo29",
+    "name": "Hotel Torre Casalecchio",
+    "city": "Casalecchio di Reno",
+    "xoteloKey": null,
+    "matchedName": null,
+    "status": "NOT_FOUND"
+  },
+  {
+    "id": "bo30",
+    "name": "Hotel Savoia Casalecchio",
+    "city": "Casalecchio di Reno",
+    "xoteloKey": null,
+    "matchedName": null,
+    "status": "NOT_FOUND"
+  },
+  {
+    "id": "bo31",
+    "name": "Hotel Villa Rossi Sasso",
+    "city": "Sasso Marconi",
+    "xoteloKey": null,
+    "matchedName": null,
+    "status": "NOT_FOUND"
+  },
+  {
+    "id": "bo32",
+    "name": "Hotel Autogrillo Sasso",
+    "city": "Sasso Marconi",
+    "xoteloKey": null,
+    "matchedName": null,
+    "status": "NOT_FOUND"
+  },
+  {
+    "id": "bo33",
+    "name": "Hotel Pianoro",
+    "city": "Pianoro",
+    "xoteloKey": null,
+    "matchedName": null,
+    "status": "NOT_FOUND"
+  },
+  {
+    "id": "bo34",
+    "name": "Hotel Terme San Pietro",
+    "city": "Castel San Pietro Terme",
+    "xoteloKey": null,
+    "matchedName": null,
+    "status": "NOT_FOUND"
+  },
+  {
+    "id": "bo35",
+    "name": "Hotel Castello San Pietro",
+    "city": "Castel San Pietro Terme",
+    "xoteloKey": null,
+    "matchedName": null,
+    "status": "NOT_FOUND"
+  },
+  {
+    "id": "bo36",
+    "name": "Centrale Park Hotel Imola",
+    "city": "Imola",
+    "xoteloKey": null,
+    "matchedName": null,
+    "status": "NOT_FOUND"
+  },
+  {
+    "id": "bo37",
+    "name": "Hotel Olimpo Imola",
+    "city": "Imola",
+    "xoteloKey": null,
+    "matchedName": null,
+    "status": "NOT_FOUND"
+  },
+  {
+    "id": "bo38",
+    "name": "Hotel Donatello Imola",
+    "city": "Imola",
+    "xoteloKey": null,
+    "matchedName": null,
+    "status": "NOT_FOUND"
+  },
+  {
+    "id": "bo39",
+    "name": "Hotel Molino Rosso",
+    "city": "Imola",
+    "xoteloKey": null,
+    "matchedName": null,
+    "status": "NOT_FOUND"
+  },
+  {
+    "id": "mo1",
+    "name": "Canalgrande Hotel",
+    "city": "Modena",
+    "xoteloKey": null,
+    "matchedName": null,
+    "status": "NOT_FOUND"
+  },
+  {
+    "id": "mo2",
+    "name": "Real Fini Hotel",
+    "city": "Modena",
+    "xoteloKey": null,
+    "matchedName": null,
+    "status": "NOT_FOUND"
+  },
+  {
+    "id": "mo3",
+    "name": "Hotel Raffaello Modena",
+    "city": "Modena",
+    "xoteloKey": null,
+    "matchedName": null,
+    "status": "NOT_FOUND"
+  },
+  {
+    "id": "mo4",
+    "name": "Rua Frati 48 Boutique",
+    "city": "Modena",
+    "xoteloKey": null,
+    "matchedName": null,
+    "status": "NOT_FOUND"
+  },
+  {
+    "id": "mo5",
+    "name": "Rechigi Park Hotel",
+    "city": "Modena",
+    "xoteloKey": null,
+    "matchedName": null,
+    "status": "NOT_FOUND"
+  },
+  {
+    "id": "mo6",
+    "name": "Hotel Centrale Modena",
+    "city": "Modena",
+    "xoteloKey": null,
+    "matchedName": null,
+    "status": "NOT_FOUND"
+  },
+  {
+    "id": "fe1",
+    "name": "Hotel Annunziata",
+    "city": "Ferrara",
+    "xoteloKey": null,
+    "matchedName": null,
+    "status": "NOT_FOUND"
+  },
+  {
+    "id": "fe2",
+    "name": "Duchessa Isabella Hotel",
+    "city": "Ferrara",
+    "xoteloKey": null,
+    "matchedName": null,
+    "status": "NOT_FOUND"
+  },
+  {
+    "id": "fe3",
+    "name": "Hotel Carlton Ferrara",
+    "city": "Ferrara",
+    "xoteloKey": null,
+    "matchedName": null,
+    "status": "NOT_FOUND"
+  },
+  {
+    "id": "fe4",
+    "name": "Hotel Europa Ferrara",
+    "city": "Ferrara",
+    "xoteloKey": null,
+    "matchedName": null,
+    "status": "NOT_FOUND"
+  },
+  {
+    "id": "fe5",
+    "name": "Hotel Ripagrande",
+    "city": "Ferrara",
+    "xoteloKey": null,
+    "matchedName": null,
+    "status": "NOT_FOUND"
+  },
+  {
+    "id": "ra1",
+    "name": "Hotel Palazzo Bezzi",
+    "city": "Ravenna",
+    "xoteloKey": null,
+    "matchedName": null,
+    "status": "NOT_FOUND"
+  },
+  {
+    "id": "ra2",
+    "name": "Hotel Bisanzio",
+    "city": "Ravenna",
+    "xoteloKey": null,
+    "matchedName": null,
+    "status": "NOT_FOUND"
+  },
+  {
+    "id": "ra3",
+    "name": "Sant'Andrea Hotel",
+    "city": "Ravenna",
+    "xoteloKey": null,
+    "matchedName": null,
+    "status": "NOT_FOUND"
+  },
+  {
+    "id": "ra4",
+    "name": "Hotel Federici",
+    "city": "Ravenna",
+    "xoteloKey": null,
+    "matchedName": null,
+    "status": "NOT_FOUND"
+  },
+  {
+    "id": "ra5",
+    "name": "Hotel Diana Ravenna",
+    "city": "Ravenna",
+    "xoteloKey": null,
+    "matchedName": null,
+    "status": "NOT_FOUND"
+  },
+  {
+    "id": "ra6",
+    "name": "Grand Hotel Mattei",
+    "city": "Ravenna",
+    "xoteloKey": null,
+    "matchedName": null,
+    "status": "NOT_FOUND"
+  }
+]
