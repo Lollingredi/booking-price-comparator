@@ -7,7 +7,8 @@ import RateTable from "../components/RateTable";
 import { useAuth } from "../contexts/AuthContext";
 import { useComparison, useHistory } from "../hooks/useRates";
 import { alertsApi } from "../api/alerts";
-import type { AlertLog } from "../types";
+import { hotelsApi } from "../api/hotels";
+import type { AlertLog, Hotel } from "../types";
 import { DEMO_ALERT_LOGS } from "../demo/demoData";
 
 export default function Dashboard() {
@@ -15,6 +16,11 @@ export default function Dashboard() {
   const today = new Date();
   const [checkIn] = useState(today);
   const [checkOut] = useState(addDays(today, 1));
+  const [myHotel, setMyHotel] = useState<Hotel | null>(null);
+
+  useEffect(() => {
+    if (!isDemoMode) hotelsApi.getMine().then(({ data }) => setMyHotel(data)).catch(() => {});
+  }, [isDemoMode]);
 
   const { data: comparison, isLoading: loadingComparison } = useComparison(checkIn, checkOut);
   const ownHotel = comparison.find((r) => r.is_own_hotel);
@@ -39,8 +45,22 @@ export default function Dashboard() {
     .filter((r) => !r.is_own_hotel && r.min_price != null)
     .sort((a, b) => Number(a.min_price) - Number(b.min_price))[0];
 
+  const hasFakeKey = !isDemoMode && myHotel?.xotelo_hotel_key?.startsWith("demo_");
+
   return (
     <div className="space-y-8">
+      {hasFakeKey && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 flex items-start gap-3">
+          <span className="text-amber-500 text-lg shrink-0 mt-0.5">⚠️</span>
+          <div className="text-sm text-amber-800">
+            <span className="font-semibold">Chiave Xotelo non valida</span> — il tuo hotel usa ancora una chiave demo ({myHotel?.xotelo_hotel_key}).
+            I prezzi non possono essere recuperati.{" "}
+            <a href="/competitors" className="underline font-medium hover:text-amber-900">
+              Aggiorna la Xotelo Key nelle impostazioni →
+            </a>
+          </div>
+        </div>
+      )}
       <div>
         <h1 className="text-2xl font-bold text-gray-900">
           Buongiorno{user?.full_name ? `, ${user.full_name.split(" ")[0]}` : ""}
