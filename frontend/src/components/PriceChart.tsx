@@ -69,7 +69,7 @@ export default function PriceChart({ data, isLoading }: PriceChartProps) {
           width={55}
         />
         <Tooltip
-          formatter={(v: number) => [`€${v.toFixed(2)}`, ""]}
+          formatter={(v: number | string) => [`€${Number(v).toFixed(2)}`, ""]}
           labelFormatter={(l) => `Data: ${l}`}
           contentStyle={{ borderRadius: 8, fontSize: 12 }}
         />

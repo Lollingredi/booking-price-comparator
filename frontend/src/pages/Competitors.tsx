@@ -19,6 +19,7 @@ export default function Competitors() {
   const [city, setCity] = useState("");
   const [stars, setStars] = useState<number | "">(3);
   const [saving, setSaving] = useState(false);
+  const [isEditing, setIsEditing] = useState(true); // true = no hotel yet; false = hotel saved, read-only
 
   // Competitor form
   const [compName, setCompName] = useState("");
@@ -43,8 +44,9 @@ export default function Competitors() {
         setHotelKey(data.booking_key);
         setCity(data.city);
         setStars(data.stars ?? "");
+        setIsEditing(false);
       })
-      .catch(() => setHotel(null))
+      .catch(() => { setHotel(null); setIsEditing(true); })
       .finally(() => setIsLoading(false));
   }, [isDemoMode]);
 
@@ -69,6 +71,7 @@ export default function Competitors() {
         stars: stars !== "" ? stars : null,
       });
       setHotel(data);
+      setIsEditing(false);
     } catch {
       setError("Errore nel salvataggio dell'hotel.");
     } finally {
@@ -165,15 +168,27 @@ export default function Competitors() {
 
       {/* Hotel form */}
       <form onSubmit={handleSaveHotel} className="bg-white rounded-[14px] border border-gray-200 p-6 space-y-4">
-        <h2 className="font-semibold text-gray-800">Impostazioni hotel</h2>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Cerca il tuo hotel su Booking.com</label>
-          {isDemoMode ? (
-            <DemoHotelSearch onSelect={handleDemoHotelSelect} placeholder="Es. Hotel Bellavista Roma..." />
-          ) : (
-            <HotelSearch onSelect={handleLiveHotelSelect} placeholder="Es. Emma Hotel Bologna Fiera..." />
+        <div className="flex items-center justify-between">
+          <h2 className="font-semibold text-gray-800">Impostazioni hotel</h2>
+          {!isEditing && !isDemoMode && (
+            <span className="text-xs bg-teal-50 text-teal-700 border border-teal-200 px-2 py-0.5 rounded-full font-medium">
+              Configurato
+            </span>
           )}
         </div>
+
+        {/* Search bar — only visible in edit mode */}
+        {isEditing && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Cerca il tuo hotel su Booking.com</label>
+            {isDemoMode ? (
+              <DemoHotelSearch onSelect={handleDemoHotelSelect} placeholder="Es. Hotel Bellavista Roma..." />
+            ) : (
+              <HotelSearch onSelect={handleLiveHotelSelect} placeholder="Es. Emma Hotel Bologna Fiera..." />
+            )}
+          </div>
+        )}
+
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Nome</label>
@@ -181,7 +196,8 @@ export default function Competitors() {
               value={hotelName}
               onChange={(e) => setHotelName(e.target.value)}
               required
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"
+              disabled={!isEditing}
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400 disabled:bg-gray-50 disabled:text-gray-600 disabled:cursor-default"
             />
           </div>
           <div>
@@ -190,7 +206,8 @@ export default function Competitors() {
               value={city}
               onChange={(e) => setCity(e.target.value)}
               required
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"
+              disabled={!isEditing}
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400 disabled:bg-gray-50 disabled:text-gray-600 disabled:cursor-default"
             />
           </div>
         </div>
@@ -210,15 +227,17 @@ export default function Competitors() {
               value={hotelKey}
               onChange={(e) => setHotelKey(e.target.value)}
               required
-              disabled={isDemoMode}
+              disabled={!isEditing || isDemoMode}
               placeholder="es. baglioni-bologna"
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-teal-400 disabled:bg-gray-50 disabled:text-gray-500"
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-teal-400 disabled:bg-gray-50 disabled:text-gray-600 disabled:cursor-default"
             />
-            <p className="text-xs text-gray-400 mt-1">
-              {isDemoMode
-                ? "Slug demo — non modificabile"
-                : "Auto-compilato dalla ricerca, oppure inserisci manualmente la parte tra /hotel/it/ e .html"}
-            </p>
+            {isEditing && (
+              <p className="text-xs text-gray-400 mt-1">
+                {isDemoMode
+                  ? "Slug demo — non modificabile"
+                  : "Auto-compilato dalla ricerca, oppure inserisci manualmente la parte tra /hotel/it/ e .html"}
+              </p>
+            )}
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Stelle</label>
@@ -228,17 +247,48 @@ export default function Competitors() {
               onChange={(e) => setStars(e.target.value ? Number(e.target.value) : "")}
               min={1}
               max={5}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"
+              disabled={!isEditing}
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400 disabled:bg-gray-50 disabled:text-gray-600 disabled:cursor-default"
             />
           </div>
         </div>
-        <button
-          type="submit"
-          disabled={saving}
-          className="bg-teal-600 hover:bg-teal-700 text-white font-medium px-5 py-2 rounded-lg text-sm transition-colors disabled:opacity-60"
-        >
-          {saving ? "Salvataggio..." : "Salva hotel"}
-        </button>
+
+        <div className="flex items-center gap-3">
+          {!isEditing ? (
+            <button
+              type="button"
+              onClick={() => setIsEditing(true)}
+              className="bg-teal-600 hover:bg-teal-700 text-white font-medium px-5 py-2 rounded-lg text-sm transition-colors"
+            >
+              Modifica
+            </button>
+          ) : (
+            <>
+              <button
+                type="submit"
+                disabled={saving}
+                className="bg-teal-600 hover:bg-teal-700 text-white font-medium px-5 py-2 rounded-lg text-sm transition-colors disabled:opacity-60"
+              >
+                {saving ? "Salvataggio..." : "Salva hotel"}
+              </button>
+              {hotel && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setHotelName(hotel.name);
+                    setHotelKey(hotel.booking_key);
+                    setCity(hotel.city);
+                    setStars(hotel.stars ?? "");
+                    setIsEditing(false);
+                  }}
+                  className="text-sm text-gray-500 hover:text-gray-700 px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Annulla
+                </button>
+              )}
+            </>
+          )}
+        </div>
       </form>
 
       {/* Competitors */}
