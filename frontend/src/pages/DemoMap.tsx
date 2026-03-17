@@ -9,7 +9,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { ITALY_HOTELS, distanceKm, getCompetitorsWithin20km } from "../demo/italyHotels";
 import type { ItalyHotel } from "../demo/italyHotels";
-import { generateDemoComparisonForHotel } from "../demo/demoData";
+import StartupLoader from "../components/StartupLoader";
 
 // ─── Custom marker icons ──────────────────────────────────────────────────────
 
@@ -199,55 +199,6 @@ function HotelSearchBox({ onSelect }: { onSelect: (h: ItalyHotel) => void }) {
   );
 }
 
-// ─── Price comparison mini-table ──────────────────────────────────────────────
-
-function ComparisonTable({ selected, competitors }: { selected: ItalyHotel; competitors: ItalyHotel[] }) {
-  const rows = useMemo(() => generateDemoComparisonForHotel(selected, competitors), [selected, competitors]);
-  const otas = ["booking", "expedia", "hotels_com", "agoda"];
-  const otaLabels: Record<string, string> = { booking: "Booking", expedia: "Expedia", hotels_com: "Hotels.com", agoda: "Agoda" };
-
-  return (
-    <div className="overflow-auto max-h-[220px]">
-      <table className="w-full text-xs border-collapse">
-        <thead className="sticky top-0">
-          <tr className="bg-gray-50">
-            <th className="text-left px-2 py-1.5 text-gray-600 font-medium border-b border-gray-200">Hotel</th>
-            {otas.map((ota) => (
-              <th key={ota} className="text-right px-2 py-1.5 text-gray-600 font-medium border-b border-gray-200 whitespace-nowrap">{otaLabels[ota]}</th>
-            ))}
-            <th className="text-right px-2 py-1.5 text-gray-600 font-medium border-b border-gray-200">Min</th>
-            <th className="text-center px-2 py-1.5 text-gray-600 font-medium border-b border-gray-200">#</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row) => (
-            <tr key={row.hotel_key} className={row.is_own_hotel ? "bg-teal-50" : "hover:bg-gray-50"}>
-              <td className="px-2 py-1.5 border-b border-gray-100 max-w-[120px]">
-                <span className="truncate block text-gray-800 font-medium">
-                  {row.is_own_hotel
-                    ? <span className="inline-flex items-center gap-1"><span className="bg-teal-600 text-white text-[10px] px-1 py-0.5 rounded font-bold">Tu</span>{row.hotel_name}</span>
-                    : row.hotel_name}
-                </span>
-              </td>
-              {otas.map((ota) => (
-                <td key={ota} className="text-right px-2 py-1.5 border-b border-gray-100 text-gray-700">
-                  {row.ota_prices[ota] != null ? `€${row.ota_prices[ota]}` : "—"}
-                </td>
-              ))}
-              <td className="text-right px-2 py-1.5 border-b border-gray-100 font-semibold text-gray-900">€{row.min_price}</td>
-              <td className="text-center px-2 py-1.5 border-b border-gray-100">
-                <span className={`inline-block w-5 h-5 rounded-full text-white text-[10px] font-bold leading-5 ${row.rank === 1 ? "bg-teal-500" : row.rank <= 3 ? "bg-amber-400" : "bg-gray-300"}`}>
-                  {row.rank}
-                </span>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function DemoMap() {
@@ -257,6 +208,8 @@ export default function DemoMap() {
   const [selected, setSelected]                           = useState<ItalyHotel | null>(null);
   const [selectedCompetitorIds, setSelectedCompetitorIds] = useState<Set<string>>(new Set());
   const [mobileView, setMobileView]                       = useState<"map" | "list">("map");
+  const [loadingSteps, setLoadingSteps]                   = useState<string[]>([]);
+  const [loadingStep, setLoadingStep]                     = useState<number>(-1);
 
   const allCompetitors = useMemo(
     () => (selected ? getCompetitorsWithin20km(selected) : []),
@@ -298,14 +251,41 @@ export default function DemoMap() {
 
   const handleStart = () => {
     if (!selected) return;
-    loginDemo(selected, checkedCompetitors);
-    navigate("/dashboard");
+    const compsToShow = checkedCompetitors.slice(0, 8);
+    const steps = [
+      `Ricerca slug Booking.com: ${selected.name}`,
+      ...compsToShow.map((c) => `Ricerca slug: ${c.name}`),
+      "Raccolta prezzi in tempo reale",
+      "Preparazione dashboard",
+    ];
+    setLoadingSteps(steps);
+    setLoadingStep(0);
+    let accumulated = 0;
+    steps.forEach((_, i) => {
+      accumulated += 800 + Math.random() * 600;
+      if (i < steps.length - 1) {
+        const delay = accumulated;
+        setTimeout(() => setLoadingStep(i + 1), delay);
+      } else {
+        const delay = accumulated;
+        setTimeout(() => {
+          setLoadingStep(steps.length);
+          setTimeout(() => {
+            loginDemo(selected, checkedCompetitors);
+            navigate("/dashboard");
+          }, 700);
+        }, delay);
+      }
+    });
   };
 
   const allChecked = allCompetitors.length > 0 && selectedCompetitorIds.size === allCompetitors.length;
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
+    <div className="h-screen overflow-hidden flex flex-col bg-gray-50">
+      {loadingStep >= 0 && (
+        <StartupLoader steps={loadingSteps} currentIndex={loadingStep} />
+      )}
 
       {/* Header */}
       <header className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between shrink-0">
@@ -399,7 +379,7 @@ export default function DemoMap() {
                       <span style={{ fontSize: 12, fontWeight: 600 }}>{hotel.name}</span>
                       <br />
                       <span style={{ fontSize: 11, color: "#6B7280" }}>
-                        {hotel.city} · {"★".repeat(hotel.stars)} · €{hotel.basePrice}
+                        {hotel.city} · {"★".repeat(hotel.stars)}
                       </span>
                     </Tooltip>
                     <Popup>
@@ -407,7 +387,6 @@ export default function DemoMap() {
                         <p style={{ fontWeight: 700, fontSize: 13 }}>{hotel.name}</p>
                         <p style={{ fontSize: 11, color: "#6B7280" }}>{hotel.city}</p>
                         <p style={{ fontSize: 11, color: "#F59E0B" }}>{"★".repeat(hotel.stars)}</p>
-                        <p style={{ fontSize: 12, color: "#0D9488", fontWeight: 600 }}>da €{hotel.basePrice}/notte</p>
                         {!isInRange ? (
                           <button
                             onClick={() => handleSelectHotel(hotel)}
@@ -475,7 +454,6 @@ export default function DemoMap() {
                     </div>
                     <button onClick={() => { setSelected(null); setMobileView("map"); }} className="text-gray-400 hover:text-gray-600 text-lg leading-none shrink-0 mt-0.5">✕</button>
                   </div>
-                  <p className="mt-2 text-sm text-teal-700 font-semibold">Prezzo base: €{selected.basePrice}/notte</p>
                 </div>
 
                 {/* ── Lista competitor con checkbox ── */}
@@ -525,9 +503,6 @@ export default function DemoMap() {
                                   </span>
                                 </div>
                               </div>
-                              <span className={`text-xs font-semibold shrink-0 ${checked ? "text-gray-700" : "text-gray-300"}`}>
-                                €{c.basePrice}
-                              </span>
                             </li>
                           );
                         })}
@@ -536,19 +511,6 @@ export default function DemoMap() {
                         {selectedCompetitorIds.size} di {allCompetitors.length} selezionati
                       </p>
                     </>
-                  )}
-                </div>
-
-                {/* ── Anteprima confronto prezzi ── */}
-                <div className="shrink-0">
-                  <h3 className="text-sm font-semibold text-gray-700 mb-0.5">Anteprima confronto prezzi</h3>
-                  <p className="text-xs text-gray-400 mb-2">Prezzi stimati per domani notte</p>
-                  {checkedCompetitors.length === 0 ? (
-                    <div className="bg-gray-50 border border-gray-100 rounded-lg p-4 text-center text-xs text-gray-400 italic">
-                      Seleziona almeno un competitor per vedere l'anteprima
-                    </div>
-                  ) : (
-                    <ComparisonTable selected={selected} competitors={checkedCompetitors} />
                   )}
                 </div>
 
