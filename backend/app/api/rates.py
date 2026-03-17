@@ -1,5 +1,5 @@
 import logging
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from decimal import Decimal
 
 from fastapi import APIRouter, HTTPException, Query
@@ -147,30 +147,31 @@ async def get_history(
     hotel_key: str = Query(...),
     days: int = Query(default=30, ge=1, le=365),
 ):
-    since = date.today() - timedelta(days=days)
+    since = datetime.utcnow() - timedelta(days=days)
+    fetched_day = func.date(RateSnapshot.fetched_at).label("fetched_day")
 
     result = await db.execute(
         select(
-            RateSnapshot.check_in_date,
+            fetched_day,
             RateSnapshot.ota_code,
             RateSnapshot.ota_name,
             func.min(RateSnapshot.price).label("min_price"),
         )
         .where(
             RateSnapshot.hotel_booking_key == hotel_key,
-            RateSnapshot.check_in_date >= since,
+            RateSnapshot.fetched_at >= since,
         )
         .group_by(
-            RateSnapshot.check_in_date,
+            func.date(RateSnapshot.fetched_at),
             RateSnapshot.ota_code,
             RateSnapshot.ota_name,
         )
-        .order_by(RateSnapshot.check_in_date)
+        .order_by(func.date(RateSnapshot.fetched_at))
     )
 
     return [
         HistoryPoint(
-            date=row.check_in_date,
+            date=row.fetched_day,
             ota_code=row.ota_code,
             ota_name=row.ota_name,
             min_price=row.min_price,
@@ -204,28 +205,29 @@ async def get_history_all(
     if not key_to_name:
         return []
 
-    since = date.today() - timedelta(days=days)
+    since = datetime.utcnow() - timedelta(days=days)
+    fetched_day = func.date(RateSnapshot.fetched_at).label("fetched_day")
 
     result = await db.execute(
         select(
             RateSnapshot.hotel_booking_key,
-            RateSnapshot.check_in_date,
+            fetched_day,
             func.min(RateSnapshot.price).label("min_price"),
         )
         .where(
             RateSnapshot.hotel_booking_key.in_(list(key_to_name.keys())),
-            RateSnapshot.check_in_date >= since,
+            RateSnapshot.fetched_at >= since,
         )
         .group_by(
             RateSnapshot.hotel_booking_key,
-            RateSnapshot.check_in_date,
+            func.date(RateSnapshot.fetched_at),
         )
-        .order_by(RateSnapshot.check_in_date)
+        .order_by(func.date(RateSnapshot.fetched_at))
     )
 
     return [
         HistoryPoint(
-            date=row.check_in_date,
+            date=row.fetched_day,
             ota_code=key_to_name[row.hotel_booking_key],
             ota_name=key_to_name[row.hotel_booking_key],
             min_price=row.min_price,
