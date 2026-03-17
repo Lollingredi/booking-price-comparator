@@ -63,7 +63,7 @@ export default function Dashboard() {
       setAlertLogs(DEMO_ALERT_LOGS);
       return;
     }
-    alertsApi.getLogs(1, 10).then(({ data }) => setAlertLogs(data));
+    alertsApi.getLogs(1, 10).then(({ data }) => setAlertLogs(data)).catch(() => {});
   }, [isDemoMode]);
 
   const unreadCount = alertLogs.filter((a) => !a.is_read).length;
@@ -86,6 +86,18 @@ export default function Dashboard() {
             I prezzi non possono essere recuperati.{" "}
             <a href="/competitors" className="underline font-medium hover:text-amber-900">
               Aggiorna il Booking.com Slug nelle impostazioni →
+            </a>
+          </div>
+        </div>
+      )}
+      {hasNoKey && (
+        <div className="bg-orange-50 border border-orange-200 rounded-xl px-4 py-3 flex items-start gap-3">
+          <span className="text-orange-500 text-lg shrink-0 mt-0.5">⚠️</span>
+          <div className="text-sm text-orange-800">
+            <span className="font-semibold">Slug Booking.com non configurato</span> — nessun codice slug trovato per il tuo hotel.
+            I prezzi non possono essere recuperati.{" "}
+            <a href="/competitors" className="underline font-medium hover:text-orange-900">
+              Imposta il Booking.com Slug nelle impostazioni →
             </a>
           </div>
         </div>

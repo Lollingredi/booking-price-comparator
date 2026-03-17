@@ -1,5 +1,6 @@
 import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
+import ErrorBoundary from "./ErrorBoundary";
 
 export default function Layout() {
   const { user, logout, isDemoMode, resetOnboarding } = useAuth();
@@ -78,7 +79,9 @@ export default function Layout() {
         </div>
       </header>
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Outlet />
+        <ErrorBoundary>
+          <Outlet />
+        </ErrorBoundary>
       </main>
     </div>
   );
