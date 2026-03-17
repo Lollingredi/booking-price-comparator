@@ -10,6 +10,8 @@ import { useAuth } from "../contexts/AuthContext";
 import { ITALY_HOTELS, distanceKm, getCompetitorsWithin20km } from "../demo/italyHotels";
 import type { ItalyHotel } from "../demo/italyHotels";
 import { hotelsApi } from "../api/hotels";
+import { ratesApi } from "../api/rates";
+import StartupLoader from "../components/StartupLoader";
 
 // ─── Custom marker icons ──────────────────────────────────────────────────────
 
@@ -198,7 +200,8 @@ export default function OnboardingMap() {
   const [selected, setSelected]                           = useState<ItalyHotel | null>(null);
   const [selectedCompetitorIds, setSelectedCompetitorIds] = useState<Set<string>>(new Set());
   const [mobileView, setMobileView]                       = useState<"map" | "list">("map");
-  const [isSaving, setIsSaving]                           = useState(false);
+  const [loadingSteps, setLoadingSteps]                   = useState<string[]>([]);
+  const [loadingStep, setLoadingStep]                     = useState<number>(-1);
   const [saveError, setSaveError]                         = useState<string | null>(null);
 
   const allCompetitors = useMemo(
@@ -240,37 +243,75 @@ export default function OnboardingMap() {
 
   const handleStart = async () => {
     if (!selected) return;
-    setIsSaving(true);
     setSaveError(null);
+
+    const steps = [
+      `Ricerca slug Booking.com: ${selected.name}`,
+      ...checkedCompetitors.map((c) => `Ricerca slug: ${c.name}`),
+      "Raccolta prezzi in tempo reale",
+    ];
+    setLoadingSteps(steps);
+    setLoadingStep(0);
+
     try {
-      // booking_key left empty — user will search for the correct slug in Competitors page
+      // Step 0: search slug for main hotel + save
+      let mainSlug = "";
+      try {
+        const res = await hotelsApi.search(selected.name);
+        mainSlug = res.data[0]?.booking_key ?? "";
+      } catch { /* keep empty on search failure */ }
       await hotelsApi.createOrUpdate({
         name: selected.name,
-        booking_key: "",
+        booking_key: mainSlug,
         city: selected.city,
         stars: selected.stars,
       });
-      for (const comp of checkedCompetitors) {
+
+      // Steps 1..n: search slug for each competitor + save
+      for (let i = 0; i < checkedCompetitors.length; i++) {
+        setLoadingStep(i + 1);
+        const comp = checkedCompetitors[i];
+        let slug = "";
+        try {
+          const res = await hotelsApi.search(comp.name);
+          slug = res.data[0]?.booking_key ?? "";
+        } catch { /* keep empty on search failure */ }
         await hotelsApi.addCompetitor({
           competitor_name: comp.name,
-          competitor_booking_key: "",
+          competitor_booking_key: slug,
           competitor_stars: comp.stars,
         });
       }
-      completeOnboarding();
-      // Redirect to Competitors so user can search for the correct Booking.com slug
-      navigate("/competitor");
+
+      // Last step: fetch prices
+      setLoadingStep(steps.length - 1);
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      const dayAfter = new Date();
+      dayAfter.setDate(dayAfter.getDate() + 2);
+      const fmt = (d: Date) => d.toISOString().slice(0, 10);
+      try {
+        await ratesApi.fetchNow(fmt(tomorrow), fmt(dayAfter));
+      } catch { /* non-blocking: dashboard will show empty state */ }
+
+      setLoadingStep(steps.length); // done
+      setTimeout(() => {
+        completeOnboarding();
+        navigate("/dashboard");
+      }, 700);
     } catch {
+      setLoadingStep(-1);
       setSaveError("Errore durante il salvataggio. Riprova.");
-    } finally {
-      setIsSaving(false);
     }
   };
 
   const allChecked = allCompetitors.length > 0 && selectedCompetitorIds.size === allCompetitors.length;
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
+    <div className="h-screen overflow-hidden flex flex-col bg-gray-50">
+      {loadingStep >= 0 && (
+        <StartupLoader steps={loadingSteps} currentIndex={loadingStep} />
+      )}
 
       {/* Header */}
       <header className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between shrink-0">
@@ -495,11 +536,6 @@ export default function OnboardingMap() {
                   )}
                 </div>
 
-                {/* ── Info prezzi ── */}
-                <div className="bg-blue-50 border border-blue-100 rounded-lg px-3 py-2.5 text-xs text-blue-700">
-                  I prezzi reali verranno caricati dopo aver collegato il tuo hotel a Booking.com nel passo successivo.
-                </div>
-
               </div>
 
               {/* ── CTA sticky ── */}
@@ -509,17 +545,15 @@ export default function OnboardingMap() {
                 )}
                 <button
                   onClick={handleStart}
-                  disabled={!selected || isSaving}
+                  disabled={!selected || loadingStep >= 0}
                   className="w-full bg-teal-600 hover:bg-teal-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-xl transition-colors text-sm shadow-sm"
                 >
-                  {isSaving
-                    ? "Salvataggio in corso..."
-                    : selected
-                    ? `Continua con ${checkedCompetitors.length} competitor →`
+                  {selected
+                    ? `Avvia con ${checkedCompetitors.length} competitor →`
                     : "Seleziona il tuo hotel per continuare"}
                 </button>
                 <p className="text-center text-xs text-gray-400 mt-1.5">
-                  Nel passo successivo collegherai il tuo hotel a Booking.com
+                  RateScope cercherà automaticamente i codici Booking.com
                 </p>
               </div>
             </div>
