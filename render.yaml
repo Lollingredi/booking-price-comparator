@@ -3,9 +3,9 @@ services:
     name: ratescope-api
     runtime: python
     rootDir: backend
-    buildCommand: pip install -r requirements.txt && playwright install chromium --with-deps
+    buildCommand: pip install -r requirements.txt
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
-    plan: starter          # free tier non supporta Playwright; usa almeno "starter"
+    plan: free             # scraping delegato a GitHub Actions — nessun Playwright sul server
     envVars:
       - key: DATABASE_URL
         fromDatabase:
@@ -23,8 +23,6 @@ services:
         value: "7"
       - key: RATE_PROVIDER
         value: booking
-      - key: REDIS_URL
-        value: ""          # lascia vuoto se non usi Celery in produzione
       - key: SCRAPER_PROXY
         value: ""
     healthCheckPath: /health

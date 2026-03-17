@@ -14,9 +14,16 @@ RATE_FRESHNESS_SECONDS = 3600  # 1 hour
 
 
 def _get_provider():
-    """Return the active rate provider (always BookingProvider)."""
-    from app.services.booking_scraper import booking_provider
-    return booking_provider
+    """Return the active rate provider, or None if Playwright is not installed."""
+    try:
+        from app.services.booking_scraper import booking_provider
+        return booking_provider
+    except ImportError:
+        return None
+
+
+# True only when Playwright is installed (i.e. in the GitHub Actions environment).
+SCRAPING_AVAILABLE: bool = _get_provider() is not None
 
 
 async def is_data_fresh(db: AsyncSession, hotel_key: str, check_in: date, check_out: date) -> bool:
@@ -43,8 +50,14 @@ async def fetch_and_save_rates(
     check_in: date,
     check_out: date,
 ) -> list[RateSnapshot]:
+    provider = _get_provider()
+    if provider is None:
+        raise RuntimeError(
+            "Playwright non è installato su questo server. "
+            "Lo scraping viene eseguito automaticamente da GitHub Actions ogni 6 ore."
+        )
     fetched_at = datetime.now(timezone.utc)
-    rate_results = await _get_provider().fetch_rates(
+    rate_results = await provider.fetch_rates(
         hotel_key,
         check_in.isoformat(),
         check_out.isoformat(),
@@ -79,7 +92,7 @@ async def fetch_rates_if_stale(
     check_in: date,
     check_out: date,
 ) -> list[RateSnapshot]:
-    if not await is_data_fresh(db, hotel_key, check_in, check_out):
+    if SCRAPING_AVAILABLE and not await is_data_fresh(db, hotel_key, check_in, check_out):
         await fetch_and_save_rates(db, hotel_key, check_in, check_out)
 
     result = await db.execute(
