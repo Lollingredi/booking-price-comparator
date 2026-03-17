@@ -19,7 +19,8 @@ class Hotel(Base):
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
     )
     name: Mapped[str] = mapped_column(String(255), nullable=False)
-    xotelo_hotel_key: Mapped[str] = mapped_column(String(100), nullable=False)
+    # DB column still named xotelo_hotel_key — renamed in Python layer only
+    booking_key: Mapped[str] = mapped_column("xotelo_hotel_key", String(100), nullable=False)
     city: Mapped[str] = mapped_column(String(100), nullable=False)
     stars: Mapped[int] = mapped_column(Integer, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
@@ -42,7 +43,8 @@ class HotelCompetitor(Base):
         UUID(as_uuid=True), ForeignKey("hotels.id", ondelete="CASCADE"), nullable=False, index=True
     )
     competitor_name: Mapped[str] = mapped_column(String(255), nullable=False)
-    competitor_xotelo_key: Mapped[str] = mapped_column(String(100), nullable=False)
+    # DB column still named competitor_xotelo_key — renamed in Python layer only
+    competitor_booking_key: Mapped[str] = mapped_column("competitor_xotelo_key", String(100), nullable=False)
     competitor_stars: Mapped[int] = mapped_column(Integer, nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     created_at: Mapped[datetime] = mapped_column(

@@ -19,7 +19,7 @@ async def _get_latest_rates(
     result = await db.execute(
         select(RateSnapshot)
         .where(
-            RateSnapshot.hotel_xotelo_key == hotel_key,
+            RateSnapshot.hotel_booking_key == hotel_key,
             RateSnapshot.check_in_date == check_in,
             RateSnapshot.fetched_at >= cutoff,
         )
@@ -52,6 +52,9 @@ async def evaluate_alerts_for_user(
     check_in: date,
 ):
     """Evaluate all active alert rules for a user and create AlertLog entries."""
+    if not hotel.booking_key or not hotel.booking_key.strip():
+        return
+
     rules_result = await db.execute(
         select(AlertRule).where(
             AlertRule.user_id == user_id,
@@ -62,7 +65,7 @@ async def evaluate_alerts_for_user(
     if not rules:
         return
 
-    own_rates = await _get_latest_rates(db, hotel.xotelo_hotel_key, check_in)
+    own_rates = await _get_latest_rates(db, hotel.booking_key, check_in)
     if not own_rates:
         return
 
@@ -79,8 +82,9 @@ async def evaluate_alerts_for_user(
 
     comp_rates_map: dict[str, dict[str, Decimal]] = {}
     for comp in competitors:
-        comp_rates = await _get_latest_rates(db, comp.competitor_xotelo_key, check_in)
-        comp_rates_map[comp.competitor_xotelo_key] = {r.ota_code: r.price for r in comp_rates}
+        if comp.competitor_booking_key and comp.competitor_booking_key.strip():
+            comp_rates = await _get_latest_rates(db, comp.competitor_booking_key, check_in)
+            comp_rates_map[comp.competitor_booking_key] = {r.ota_code: r.price for r in comp_rates}
 
     for rule in rules:
         if rule.rule_type == "parity_issue" and len(own_prices) >= 2:
@@ -97,7 +101,7 @@ async def evaluate_alerts_for_user(
 
         elif rule.rule_type == "undercut" and own_min is not None:
             for comp in competitors:
-                comp_prices = comp_rates_map.get(comp.competitor_xotelo_key, {})
+                comp_prices = comp_rates_map.get(comp.competitor_booking_key, {})
                 comp_min = min(comp_prices.values()) if comp_prices else None
                 if comp_min is not None and comp_min < own_min:
                     diff = float(own_min - comp_min)
@@ -111,7 +115,7 @@ async def evaluate_alerts_for_user(
         elif rule.rule_type == "competitor_price_drop":
             threshold_pct = float(rule.threshold_value) / 100
             for comp in competitors:
-                comp_prices = comp_rates_map.get(comp.competitor_xotelo_key, {})
+                comp_prices = comp_rates_map.get(comp.competitor_booking_key, {})
                 comp_min = min(comp_prices.values()) if comp_prices else None
                 if comp_min is not None and own_min is not None:
                     drop_ratio = (float(own_min) - float(comp_min)) / float(own_min)

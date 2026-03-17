@@ -24,14 +24,14 @@ async def create_or_update_hotel(payload: HotelCreate, current_user: CurrentUser
 
     if hotel:
         hotel.name = payload.name
-        hotel.xotelo_hotel_key = payload.xotelo_hotel_key
+        hotel.booking_key = payload.booking_key
         hotel.city = payload.city
         hotel.stars = payload.stars
     else:
         hotel = Hotel(
             user_id=current_user.id,
             name=payload.name,
-            xotelo_hotel_key=payload.xotelo_hotel_key,
+            booking_key=payload.booking_key,
             city=payload.city,
             stars=payload.stars,
         )
@@ -62,7 +62,7 @@ async def add_competitor(payload: CompetitorCreate, current_user: CurrentUser, d
     competitor = HotelCompetitor(
         hotel_id=hotel.id,
         competitor_name=payload.competitor_name,
-        competitor_xotelo_key=payload.competitor_xotelo_key,
+        competitor_booking_key=payload.competitor_booking_key,
         competitor_stars=payload.competitor_stars,
     )
     db.add(competitor)

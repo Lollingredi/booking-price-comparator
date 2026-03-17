@@ -27,11 +27,7 @@ async def fetch_now(
     check_in: date = Query(...),
     check_out: date = Query(...),
 ):
-    """
-    Manually trigger a price scrape for the user's hotel + all active competitors.
-    Returns a summary with how many hotels were scraped and how many prices were saved.
-    Useful to bootstrap data or diagnose scraping issues.
-    """
+    """Manually trigger a price scrape for the user's hotel + all active competitors."""
     result = await db.execute(select(Hotel).where(Hotel.user_id == current_user.id))
     hotel = result.scalar_one_or_none()
     if not hotel:
@@ -45,7 +41,12 @@ async def fetch_now(
     )
     competitors = comps_result.scalars().all()
 
-    keys = [hotel.xotelo_hotel_key] + [c.competitor_xotelo_key for c in competitors]
+    # Skip hotels without a configured Booking.com slug
+    keys = [
+        k for k in
+        [hotel.booking_key] + [c.competitor_booking_key for c in competitors]
+        if k and k.strip()
+    ]
 
     scraped = 0
     prices_found = 0
@@ -77,10 +78,14 @@ async def get_current_rates(
 
     response: list[HotelRates] = []
 
-    own_snapshots = await fetch_rates_if_stale(db, hotel.xotelo_hotel_key, check_in, check_out)
+    own_snapshots = (
+        await fetch_rates_if_stale(db, hotel.booking_key, check_in, check_out)
+        if hotel.booking_key and hotel.booking_key.strip()
+        else []
+    )
     response.append(
         HotelRates(
-            hotel_key=hotel.xotelo_hotel_key,
+            hotel_key=hotel.booking_key,
             hotel_name=hotel.name,
             is_own_hotel=True,
             rates=[RateSnapshotOut.model_validate(s) for s in own_snapshots],
@@ -96,10 +101,14 @@ async def get_current_rates(
     competitors = comps_result.scalars().all()
 
     for comp in competitors:
-        snapshots = await fetch_rates_if_stale(db, comp.competitor_xotelo_key, check_in, check_out)
+        snapshots = (
+            await fetch_rates_if_stale(db, comp.competitor_booking_key, check_in, check_out)
+            if comp.competitor_booking_key and comp.competitor_booking_key.strip()
+            else []
+        )
         response.append(
             HotelRates(
-                hotel_key=comp.competitor_xotelo_key,
+                hotel_key=comp.competitor_booking_key,
                 hotel_name=comp.competitor_name,
                 is_own_hotel=False,
                 rates=[RateSnapshotOut.model_validate(s) for s in snapshots],
@@ -126,7 +135,7 @@ async def get_history(
             func.min(RateSnapshot.price).label("min_price"),
         )
         .where(
-            RateSnapshot.hotel_xotelo_key == hotel_key,
+            RateSnapshot.hotel_booking_key == hotel_key,
             RateSnapshot.check_in_date >= since,
         )
         .group_by(
@@ -168,11 +177,10 @@ async def get_comparison(
     )
     competitors = comps_result.scalars().all()
 
-    all_hotels = [(hotel.xotelo_hotel_key, hotel.name, True)] + [
-        (c.competitor_xotelo_key, c.competitor_name, False) for c in competitors
+    all_hotels = [(hotel.booking_key, hotel.name, True)] + [
+        (c.competitor_booking_key, c.competitor_name, False) for c in competitors
     ]
 
-    # Collect all OTA codes
     all_ota_codes: set[str] = set()
     hotel_rate_maps: dict[str, dict[str, Decimal]] = {}
 
@@ -180,7 +188,7 @@ async def get_comparison(
         snaps_result = await db.execute(
             select(RateSnapshot)
             .where(
-                RateSnapshot.hotel_xotelo_key == key,
+                RateSnapshot.hotel_booking_key == key,
                 RateSnapshot.check_in_date == check_in,
                 RateSnapshot.check_out_date == check_out,
             )
@@ -213,7 +221,6 @@ async def get_comparison(
             )
         )
 
-    # Rank by min price
     sortable = [r for r in rows if r.min_price is not None]
     sortable.sort(key=lambda r: r.min_price)
     for i, r in enumerate(sortable, 1):

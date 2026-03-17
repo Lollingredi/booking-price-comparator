@@ -44,7 +44,7 @@ export function generateDemoComparisonForHotel(
     const validPrices = Object.values(otaPrices).filter((v) => v != null) as number[];
     const min_price = Math.min(...validPrices);
 
-    return { hotel_key: h.xoteloKey, hotel_name: h.name, is_own_hotel: isOwn, ota_prices: otaPrices, min_price, rank: 0 };
+    return { hotel_key: h.bookingKey, hotel_name: h.name, is_own_hotel: isOwn, ota_prices: otaPrices, min_price, rank: 0 };
   });
 
   // assign rank by min_price ascending
@@ -62,7 +62,7 @@ export function buildDemoHotelFromItaly(
     id: "demo-hotel-id",
     user_id: "demo-user-id",
     name: hotel.name,
-    xotelo_hotel_key: hotel.xoteloKey,
+    booking_key: hotel.bookingKey,
     city: hotel.city,
     stars: hotel.stars,
     created_at: subDays(new Date(), 30).toISOString(),
@@ -70,7 +70,7 @@ export function buildDemoHotelFromItaly(
       id: `comp-demo-${i}`,
       hotel_id: "demo-hotel-id",
       competitor_name: c.name,
-      competitor_xotelo_key: c.xoteloKey,
+      competitor_booking_key: c.bookingKey,
       competitor_stars: c.stars,
       is_active: true,
       created_at: subDays(new Date(), 28 - i).toISOString(),
@@ -91,7 +91,7 @@ export const DEMO_HOTEL: Hotel = {
   id: "demo-hotel-id",
   user_id: "demo-user-id",
   name: "Hotel Bellavista Roma",
-  xotelo_hotel_key: "demo-key-own",
+  booking_key: "demo-key-own",
   city: "Roma",
   stars: 4,
   created_at: subDays(new Date(), 30).toISOString(),
@@ -100,7 +100,7 @@ export const DEMO_HOTEL: Hotel = {
       id: "comp-1",
       hotel_id: "demo-hotel-id",
       competitor_name: "Grand Hotel Ritz",
-      competitor_xotelo_key: "demo-key-comp1",
+      competitor_booking_key: "demo-key-comp1",
       competitor_stars: 4,
       is_active: true,
       created_at: subDays(new Date(), 28).toISOString(),
@@ -109,7 +109,7 @@ export const DEMO_HOTEL: Hotel = {
       id: "comp-2",
       hotel_id: "demo-hotel-id",
       competitor_name: "Roma Central Suites",
-      competitor_xotelo_key: "demo-key-comp2",
+      competitor_booking_key: "demo-key-comp2",
       competitor_stars: 3,
       is_active: true,
       created_at: subDays(new Date(), 25).toISOString(),
@@ -118,7 +118,7 @@ export const DEMO_HOTEL: Hotel = {
       id: "comp-3",
       hotel_id: "demo-hotel-id",
       competitor_name: "Palazzo Colosseo Hotel",
-      competitor_xotelo_key: "demo-key-comp3",
+      competitor_booking_key: "demo-key-comp3",
       competitor_stars: 5,
       is_active: true,
       created_at: subDays(new Date(), 20).toISOString(),

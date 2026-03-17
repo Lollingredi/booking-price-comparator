@@ -30,7 +30,7 @@ export default function Competitors() {
     if (isDemoMode) {
       setHotel(DEMO_HOTEL);
       setHotelName(DEMO_HOTEL.name);
-      setHotelKey(DEMO_HOTEL.xotelo_hotel_key);
+      setHotelKey(DEMO_HOTEL.booking_key);
       setCity(DEMO_HOTEL.city);
       setStars(DEMO_HOTEL.stars ?? "");
       setIsLoading(false);
@@ -40,7 +40,7 @@ export default function Competitors() {
       .then(({ data }) => {
         setHotel(data);
         setHotelName(data.name);
-        setHotelKey(data.xotelo_hotel_key);
+        setHotelKey(data.booking_key);
         setCity(data.city);
         setStars(data.stars ?? "");
       })
@@ -54,7 +54,7 @@ export default function Competitors() {
       // In demo mode, update state locally only
       setHotel((prev) =>
         prev
-          ? { ...prev, name: hotelName, xotelo_hotel_key: hotelKey, city, stars: stars !== "" ? stars : null }
+          ? { ...prev, name: hotelName, booking_key: hotelKey, city, stars: stars !== "" ? stars : null }
           : prev
       );
       return;
@@ -64,7 +64,7 @@ export default function Competitors() {
     try {
       const { data } = await hotelsApi.createOrUpdate({
         name: hotelName,
-        xotelo_hotel_key: hotelKey,
+        booking_key: hotelKey,
         city,
         stars: stars !== "" ? stars : null,
       });
@@ -78,12 +78,12 @@ export default function Competitors() {
 
   const handleDemoHotelSelect = (h: ItalyHotel) => {
     setHotelName(h.name);
-    setHotelKey(h.xoteloKey);
+    setHotelKey(h.bookingKey);
     setCity(h.city);
     setStars(h.stars);
     setHotel((prev) =>
       prev
-        ? { ...prev, name: h.name, xotelo_hotel_key: h.xoteloKey, city: h.city, stars: h.stars }
+        ? { ...prev, name: h.name, booking_key: h.bookingKey, city: h.city, stars: h.stars }
         : prev
     );
   };
@@ -109,7 +109,7 @@ export default function Competitors() {
           id: `demo-comp-${Date.now()}`,
           hotel_id: hotel.id,
           competitor_name: compName,
-          competitor_xotelo_key: compKey,
+          competitor_booking_key: compKey,
           competitor_stars: compStars !== "" ? compStars : null,
           is_active: true,
           created_at: new Date().toISOString(),
@@ -118,7 +118,7 @@ export default function Competitors() {
       } else {
         const { data: comp } = await hotelsApi.addCompetitor({
           competitor_name: compName,
-          competitor_xotelo_key: compKey,
+          competitor_booking_key: compKey,
           competitor_stars: compStars !== "" ? compStars : null,
         });
         setHotel((prev) => prev ? { ...prev, competitors: [...prev.competitors, comp] } : prev);
@@ -252,7 +252,7 @@ export default function Competitors() {
                 <li key={comp.id} className="flex items-center justify-between py-3">
                   <div>
                     <p className="text-sm font-medium text-gray-800">{comp.competitor_name}</p>
-                    <p className="text-xs font-mono text-gray-400">{comp.competitor_xotelo_key}</p>
+                    <p className="text-xs font-mono text-gray-400">{comp.competitor_booking_key}</p>
                   </div>
                   <button
                     onClick={() => handleRemoveCompetitor(comp)}
@@ -273,7 +273,7 @@ export default function Competitors() {
               <label className="block text-xs font-medium text-gray-600 mb-1">Cerca competitor</label>
               {isDemoMode ? (
                 <DemoHotelSearch
-                  onSelect={(h) => { setCompName(h.name); setCompKey(h.xoteloKey); setCompStars(h.stars); }}
+                  onSelect={(h) => { setCompName(h.name); setCompKey(h.bookingKey); setCompStars(h.stars); }}
                   placeholder="Cerca hotel competitor..."
                 />
               ) : (

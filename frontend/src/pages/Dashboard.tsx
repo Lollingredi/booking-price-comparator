@@ -73,8 +73,8 @@ export default function Dashboard() {
     .filter((r) => !r.is_own_hotel && r.min_price != null)
     .sort((a, b) => Number(a.min_price) - Number(b.min_price))[0];
 
-  const hasFakeKey = !isDemoMode && myHotel?.xotelo_hotel_key?.startsWith("demo_");
-  const hasNoKey = !isDemoMode && myHotel && !myHotel.xotelo_hotel_key;
+  const hasFakeKey = !isDemoMode && myHotel?.booking_key?.startsWith("demo_");
+  const hasNoKey = !isDemoMode && myHotel && !myHotel.booking_key;
 
   return (
     <div className="space-y-8">
@@ -82,7 +82,7 @@ export default function Dashboard() {
         <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 flex items-start gap-3">
           <span className="text-amber-500 text-lg shrink-0 mt-0.5">⚠️</span>
           <div className="text-sm text-amber-800">
-            <span className="font-semibold">Booking.com Slug non valido</span> — il tuo hotel usa ancora una chiave demo ({myHotel?.xotelo_hotel_key}).
+            <span className="font-semibold">Booking.com Slug non valido</span> — il tuo hotel usa ancora una chiave demo ({myHotel?.booking_key}).
             I prezzi non possono essere recuperati.{" "}
             <a href="/competitors" className="underline font-medium hover:text-amber-900">
               Aggiorna il Booking.com Slug nelle impostazioni →

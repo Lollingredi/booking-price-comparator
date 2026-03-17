@@ -39,7 +39,7 @@ from playwright.async_api import (
     async_playwright,
 )
 
-from app.services.xotelo import HotelSearchResult, RateProvider, RateResult
+from app.services.providers import HotelSearchResult, RateProvider, RateResult
 
 logger = logging.getLogger(__name__)
 

@@ -4,7 +4,7 @@ import type { Competitor, Hotel, HotelSearchResult } from "../types";
 export const hotelsApi = {
   createOrUpdate: (data: {
     name: string;
-    xotelo_hotel_key: string;
+    booking_key?: string;
     city: string;
     stars?: number | null;
   }) => apiClient.post<Hotel>("/api/hotels", data),
@@ -13,7 +13,7 @@ export const hotelsApi = {
 
   addCompetitor: (data: {
     competitor_name: string;
-    competitor_xotelo_key: string;
+    competitor_booking_key?: string;
     competitor_stars?: number | null;
   }) => apiClient.post<Competitor>("/api/hotels/competitors", data),
 

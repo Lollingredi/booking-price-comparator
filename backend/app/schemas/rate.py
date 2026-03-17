@@ -7,7 +7,7 @@ from pydantic import BaseModel
 
 class RateSnapshotOut(BaseModel):
     id: uuid.UUID
-    hotel_xotelo_key: str
+    hotel_booking_key: str
     ota_code: str
     ota_name: str
     price: Decimal

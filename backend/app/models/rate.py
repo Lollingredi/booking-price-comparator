@@ -16,7 +16,8 @@ class RateSnapshot(Base):
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
-    hotel_xotelo_key: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    # DB column still named hotel_xotelo_key — renamed in Python layer only
+    hotel_booking_key: Mapped[str] = mapped_column("hotel_xotelo_key", String(100), nullable=False, index=True)
     ota_code: Mapped[str] = mapped_column(String(50), nullable=False)
     ota_name: Mapped[str] = mapped_column(String(100), nullable=False)
     price: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)

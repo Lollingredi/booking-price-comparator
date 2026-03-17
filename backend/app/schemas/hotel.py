@@ -6,7 +6,7 @@ from pydantic import BaseModel
 
 class HotelCreate(BaseModel):
     name: str
-    xotelo_hotel_key: str
+    booking_key: str = ""
     city: str
     stars: int | None = None
 
@@ -15,7 +15,7 @@ class HotelOut(BaseModel):
     id: uuid.UUID
     user_id: uuid.UUID
     name: str
-    xotelo_hotel_key: str
+    booking_key: str
     city: str
     stars: int | None
     created_at: datetime
@@ -26,7 +26,7 @@ class HotelOut(BaseModel):
 
 class CompetitorCreate(BaseModel):
     competitor_name: str
-    competitor_xotelo_key: str
+    competitor_booking_key: str = ""
     competitor_stars: int | None = None
 
 
@@ -34,7 +34,7 @@ class CompetitorOut(BaseModel):
     id: uuid.UUID
     hotel_id: uuid.UUID
     competitor_name: str
-    competitor_xotelo_key: str
+    competitor_booking_key: str
     competitor_stars: int | None
     is_active: bool
     created_at: datetime

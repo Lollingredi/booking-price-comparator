@@ -7,23 +7,19 @@ from sqlalchemy import select
 
 from app.models import Hotel, HotelCompetitor, RateSnapshot
 from app.config import settings
-from app.services.xotelo import xotelo_provider
-
-
-def _get_provider():
-    """Return the active rate provider based on RATE_PROVIDER config."""
-    if settings.RATE_PROVIDER == "booking":
-        from app.services.booking_scraper import booking_provider
-        return booking_provider
-    return xotelo_provider
 
 logger = logging.getLogger(__name__)
 
 RATE_FRESHNESS_SECONDS = 3600  # 1 hour
 
 
+def _get_provider():
+    """Return the active rate provider (always BookingProvider)."""
+    from app.services.booking_scraper import booking_provider
+    return booking_provider
+
+
 async def is_data_fresh(db: AsyncSession, hotel_key: str, check_in: date, check_out: date) -> bool:
-    """Return True if we have rates fetched within the freshness window."""
     cutoff = datetime.now(timezone.utc).timestamp() - RATE_FRESHNESS_SECONDS
     from datetime import datetime as dt
     cutoff_dt = dt.fromtimestamp(cutoff, tz=timezone.utc)
@@ -31,7 +27,7 @@ async def is_data_fresh(db: AsyncSession, hotel_key: str, check_in: date, check_
     result = await db.execute(
         select(RateSnapshot)
         .where(
-            RateSnapshot.hotel_xotelo_key == hotel_key,
+            RateSnapshot.hotel_booking_key == hotel_key,
             RateSnapshot.check_in_date == check_in,
             RateSnapshot.check_out_date == check_out,
             RateSnapshot.fetched_at >= cutoff_dt,
@@ -47,7 +43,6 @@ async def fetch_and_save_rates(
     check_in: date,
     check_out: date,
 ) -> list[RateSnapshot]:
-    """Fetch rates from Xotelo and persist them to the DB."""
     fetched_at = datetime.now(timezone.utc)
     rate_results = await _get_provider().fetch_rates(
         hotel_key,
@@ -58,7 +53,7 @@ async def fetch_and_save_rates(
     snapshots = []
     for r in rate_results:
         snap = RateSnapshot(
-            hotel_xotelo_key=hotel_key,
+            hotel_booking_key=hotel_key,
             ota_code=r.ota_code,
             ota_name=r.ota_name,
             price=r.price,
@@ -73,9 +68,7 @@ async def fetch_and_save_rates(
     await db.flush()
     logger.info(
         "Saved %d rate snapshots for hotel_key=%s check_in=%s",
-        len(snapshots),
-        hotel_key,
-        check_in,
+        len(snapshots), hotel_key, check_in,
     )
     return snapshots
 
@@ -86,14 +79,13 @@ async def fetch_rates_if_stale(
     check_in: date,
     check_out: date,
 ) -> list[RateSnapshot]:
-    """Fetch fresh rates if existing data is stale; otherwise return cached."""
     if not await is_data_fresh(db, hotel_key, check_in, check_out):
         await fetch_and_save_rates(db, hotel_key, check_in, check_out)
 
     result = await db.execute(
         select(RateSnapshot)
         .where(
-            RateSnapshot.hotel_xotelo_key == hotel_key,
+            RateSnapshot.hotel_booking_key == hotel_key,
             RateSnapshot.check_in_date == check_in,
             RateSnapshot.check_out_date == check_out,
         )
@@ -103,13 +95,14 @@ async def fetch_rates_if_stale(
 
 
 async def fetch_all_hotels_rates(db: AsyncSession, check_in: date, check_out: date):
-    """Batch-fetch rates for all active hotels + competitors. Rate-limited to 1 req/s."""
+    """Batch-fetch rates for all active hotels + competitors with a configured slug."""
     hotels_result = await db.execute(select(Hotel))
     hotels = hotels_result.scalars().all()
 
     all_keys: set[str] = set()
     for hotel in hotels:
-        all_keys.add(hotel.xotelo_hotel_key)
+        if hotel.booking_key and hotel.booking_key.strip():
+            all_keys.add(hotel.booking_key)
         comps_result = await db.execute(
             select(HotelCompetitor).where(
                 HotelCompetitor.hotel_id == hotel.id,
@@ -117,7 +110,8 @@ async def fetch_all_hotels_rates(db: AsyncSession, check_in: date, check_out: da
             )
         )
         for comp in comps_result.scalars().all():
-            all_keys.add(comp.competitor_xotelo_key)
+            if comp.competitor_booking_key and comp.competitor_booking_key.strip():
+                all_keys.add(comp.competitor_booking_key)
 
     processed = 0
     errors = 0
@@ -128,12 +122,8 @@ async def fetch_all_hotels_rates(db: AsyncSession, check_in: date, check_out: da
         except Exception as exc:
             logger.error("Failed to fetch rates for key=%s: %s", key, exc)
             errors += 1
-        await asyncio.sleep(1)  # Xotelo rate limit
+        await asyncio.sleep(1)
 
     await db.commit()
-    logger.info(
-        "fetch_all_hotels_rates done: processed=%d errors=%d",
-        processed,
-        errors,
-    )
+    logger.info("fetch_all_hotels_rates done: processed=%d errors=%d", processed, errors)
     return processed, errors

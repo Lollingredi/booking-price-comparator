@@ -11,7 +11,7 @@ export interface Hotel {
   id: string;
   user_id: string;
   name: string;
-  xotelo_hotel_key: string;
+  booking_key: string;
   city: string;
   stars: number | null;
   created_at: string;
@@ -22,7 +22,7 @@ export interface Competitor {
   id: string;
   hotel_id: string;
   competitor_name: string;
-  competitor_xotelo_key: string;
+  competitor_booking_key: string;
   competitor_stars: number | null;
   is_active: boolean;
   created_at: string;
@@ -30,7 +30,7 @@ export interface Competitor {
 
 export interface RateSnapshot {
   id: string;
-  hotel_xotelo_key: string;
+  hotel_booking_key: string;
   ota_code: string;
   ota_name: string;
   price: number;
@@ -90,7 +90,6 @@ export interface HotelSearchResult {
   address: string | null;
   city: string | null;
 }
-
 
 export interface Token {
   access_token: string;
