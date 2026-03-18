@@ -21,6 +21,23 @@ elif _db_url.startswith("postgresql://") and "+asyncpg" not in _db_url:
     _db_url = _db_url.replace("postgresql://", "postgresql+asyncpg://", 1)
 _db_url = _db_url.replace("sslmode=require", "ssl=require")
 
+# Compatibility shim: asyncpg < 0.29 doesn't accept the channel_binding kwarg
+# that newer SQLAlchemy passes. Patch connect() to silently drop unknown params.
+import asyncpg as _asyncpg
+import inspect as _inspect
+
+_orig_connect = _asyncpg.connect
+_supported_params = set(_inspect.signature(_orig_connect).parameters)
+if "channel_binding" not in _supported_params:
+    import functools
+
+    @functools.wraps(_orig_connect)
+    async def _compat_connect(*args, **kwargs):
+        kwargs.pop("channel_binding", None)
+        return await _orig_connect(*args, **kwargs)
+
+    _asyncpg.connect = _compat_connect  # type: ignore[assignment]
+
 engine = create_async_engine(
     _db_url,
     echo=False,
