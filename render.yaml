@@ -3,7 +3,7 @@ services:
     name: ratescope-api
     runtime: python
     rootDir: backend
-    buildCommand: pip install -r requirements.txt
+    buildCommand: pip install --no-cache-dir -r requirements.txt
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
     plan: free             # scraping delegato a GitHub Actions — nessun Playwright sul server
     envVars:
