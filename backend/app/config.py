@@ -14,11 +14,14 @@ class Settings(BaseSettings):
     # Optional HTTP/SOCKS5 proxy for the scraper (residential recommended for production)
     # Example: http://user:pass@host:port  or  socks5://user:pass@host:port
     SCRAPER_PROXY: str = ""
-    CORS_ORIGINS: str = "http://localhost:5173"
+    CORS_ORIGINS: str = "*"
 
     @property
     def cors_origins_list(self) -> list[str]:
-        return [o.strip() for o in self.CORS_ORIGINS.split(",")]
+        raw = self.CORS_ORIGINS.strip()
+        if raw == "*":
+            return ["*"]
+        return [o.strip() for o in raw.split(",") if o.strip()]
 
 
 settings = Settings()

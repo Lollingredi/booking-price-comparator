@@ -14,7 +14,7 @@ services:
       - key: SECRET_KEY
         generateValue: true
       - key: CORS_ORIGINS
-        value: https://your-vercel-app.vercel.app   # <-- sostituisci con il tuo URL Vercel
+        value: "*"   # accetta tutti i domini; restringe con "https://tuoapp.vercel.app" in produzione
       - key: ALGORITHM
         value: HS256
       - key: ACCESS_TOKEN_EXPIRE_MINUTES
