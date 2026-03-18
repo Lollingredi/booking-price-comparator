@@ -52,7 +52,8 @@ async def register(payload: UserCreate, db: DB):
         full_name=payload.full_name,
     )
     db.add(user)
-    await db.flush()
+    await db.commit()
+    await db.refresh(user)
     return _make_tokens(user.id)
 
 

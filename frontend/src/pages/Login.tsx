@@ -1,6 +1,17 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
+import axios from "axios";
+
+function getLoginError(error: unknown): string {
+  if (axios.isAxiosError(error)) {
+    const status = error.response?.status;
+    if (status === 401) return "Email o password non validi.";
+    if (status && status >= 500) return "Errore del server. Il backend potrebbe essere in avvio su Render (30–60s): riprova tra poco.";
+    if (!error.response) return "Impossibile raggiungere il server. E' in avvio su Render? Attendi 30–60s e riprova.";
+  }
+  return "Accesso fallito. Riprova tra qualche secondo.";
+}
 
 export default function Login() {
   const { login } = useAuth();
@@ -17,8 +28,8 @@ export default function Login() {
     try {
       await login(email, password);
       navigate("/dashboard");
-    } catch {
-      setError("Email o password non validi.");
+    } catch (err) {
+      setError(getLoginError(err));
     } finally {
       setIsLoading(false);
     }
@@ -29,12 +40,15 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 px-4">
       <div className="w-full max-w-sm">
         <h1 className="text-3xl font-bold text-teal-600 text-center mb-2">RateScope</h1>
-        <p className="text-center text-gray-500 text-sm mb-8">
+        <p className="text-center text-gray-500 text-sm mb-4">
           Rate shopping per albergatori italiani
         </p>
+        <div className="mb-4 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-xs text-amber-800">
+          <span className="font-semibold">Nota:</span> Il backend e' ospitato su Render (piano gratuito) e si spegne dopo 15 minuti di inattivita'. La prima richiesta puo' richiedere <span className="font-semibold">30–60 secondi</span>. Attendi pazientemente.
+        </div>
         <form
           onSubmit={handleSubmit}
           className="bg-white rounded-[14px] border border-gray-200 p-6 space-y-4"
@@ -70,7 +84,7 @@ export default function Login() {
             disabled={isLoading}
             className="w-full bg-teal-600 hover:bg-teal-700 text-white font-medium py-2.5 rounded-lg transition-colors disabled:opacity-60"
           >
-            {isLoading ? "Accesso in corso..." : "Accedi"}
+            {isLoading ? "Accesso in corso… (30–60s)" : "Accedi"}
           </button>
           <p className="text-center text-sm text-gray-500">
             Non hai un account?{" "}

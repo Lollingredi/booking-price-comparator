@@ -1,6 +1,28 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
+import axios from "axios";
+
+function RenderBanner() {
+  return (
+    <div className="w-full max-w-sm mb-4 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-xs text-amber-800">
+      <span className="font-semibold">Nota:</span> Il backend e' ospitato su Render (piano gratuito) e si spegne dopo 15 minuti di inattivita'. La prima richiesta puo' richiedere <span className="font-semibold">30–60 secondi</span>. Attendi pazientemente.
+    </div>
+  );
+}
+
+function getErrorMessage(error: unknown): string {
+  if (axios.isAxiosError(error)) {
+    const status = error.response?.status;
+    const detail = error.response?.data?.detail;
+    if (status === 400 && detail) return `Registrazione fallita: ${detail}`;
+    if (status === 400) return "L'email e' gia' in uso. Prova ad accedere.";
+    if (status === 422) return "Dati non validi. Controlla i campi e riprova.";
+    if (status && status >= 500) return "Errore del server. Potrebbe essere in avvio (30–60s): riprova tra poco.";
+    if (!error.response) return "Impossibile raggiungere il server. E' in avvio su Render? Attendi 30–60s e riprova.";
+  }
+  return "Registrazione fallita. Riprova tra qualche secondo.";
+}
 
 export default function Register() {
   const { register } = useAuth();
@@ -18,20 +40,21 @@ export default function Register() {
     try {
       await register(email, password, fullName);
       navigate("/dashboard");
-    } catch {
-      setError("Registrazione fallita. L'email potrebbe essere già in uso.");
+    } catch (err) {
+      setError(getErrorMessage(err));
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 px-4">
+      <h1 className="text-3xl font-bold text-teal-600 text-center mb-2">RateScope</h1>
+      <p className="text-center text-gray-500 text-sm mb-4">
+        Crea il tuo account gratuito
+      </p>
+      <RenderBanner />
       <div className="w-full max-w-sm">
-        <h1 className="text-3xl font-bold text-teal-600 text-center mb-2">RateScope</h1>
-        <p className="text-center text-gray-500 text-sm mb-8">
-          Crea il tuo account gratuito
-        </p>
         <form
           onSubmit={handleSubmit}
           className="bg-white rounded-[14px] border border-gray-200 p-6 space-y-4"
@@ -78,10 +101,10 @@ export default function Register() {
             disabled={isLoading}
             className="w-full bg-teal-600 hover:bg-teal-700 text-white font-medium py-2.5 rounded-lg transition-colors disabled:opacity-60"
           >
-            {isLoading ? "Registrazione..." : "Crea account"}
+            {isLoading ? "Registrazione in corso… (30–60s)" : "Crea account"}
           </button>
           <p className="text-center text-sm text-gray-500">
-            Hai già un account?{" "}
+            Hai gia' un account?{" "}
             <Link to="/login" className="text-teal-600 hover:underline">
               Accedi
             </Link>
