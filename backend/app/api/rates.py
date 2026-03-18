@@ -10,7 +10,11 @@ from app.api.deps import CurrentUser, DB
 from app.models.hotel import Hotel, HotelCompetitor
 from app.models.rate import RateSnapshot
 from app.schemas.rate import ComparisonRow, HistoryPoint, HotelRates, RateSnapshotOut
-from app.services.rate_fetcher import fetch_and_save_rates, fetch_rates_if_stale
+from app.services.rate_fetcher import (
+    SCRAPING_AVAILABLE,
+    fetch_and_save_rates,
+    fetch_rates_if_stale,
+)
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -32,6 +36,14 @@ async def fetch_now(
 ):
     """Manually trigger a price scrape for the user's hotel + all active competitors.
     Scrapes `days_ahead` consecutive check-in dates starting from check_in."""
+    if not SCRAPING_AVAILABLE:
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                "Scraping non disponibile su questo server. "
+                "I prezzi vengono aggiornati automaticamente da GitHub Actions ogni 6 ore."
+            ),
+        )
     result = await db.execute(select(Hotel).where(Hotel.user_id == current_user.id))
     hotel = result.scalar_one_or_none()
     if not hotel:

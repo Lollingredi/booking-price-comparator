@@ -3,8 +3,18 @@ from sqlalchemy.orm import DeclarativeBase
 
 from app.config import settings
 
+# Normalize DATABASE_URL for asyncpg:
+#   postgres://  or  postgresql://  →  postgresql+asyncpg://
+#   ?sslmode=require  →  ?ssl=require  (psycopg2 param not understood by asyncpg)
+_db_url = settings.DATABASE_URL
+if _db_url.startswith("postgres://"):
+    _db_url = _db_url.replace("postgres://", "postgresql+asyncpg://", 1)
+elif _db_url.startswith("postgresql://") and "+asyncpg" not in _db_url:
+    _db_url = _db_url.replace("postgresql://", "postgresql+asyncpg://", 1)
+_db_url = _db_url.replace("sslmode=require", "ssl=require")
+
 engine = create_async_engine(
-    settings.DATABASE_URL,
+    _db_url,
     echo=False,
     pool_pre_ping=True,
 )

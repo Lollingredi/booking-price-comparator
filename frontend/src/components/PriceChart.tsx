@@ -40,15 +40,15 @@ export default function PriceChart({ data, isLoading }: PriceChartProps) {
     );
   }
 
-  // Pivot: date → { [ota_code]: min_price }
+  // Pivot: date → { date: string, [ota_code]: number }
   const otaCodes = Array.from(new Set(data.map((d) => d.ota_code)));
-  const byDate: Record<string, Record<string, number>> = {};
+  const byDate: Record<string, Record<string, string | number>> = {};
   for (const pt of data) {
-    if (!byDate[pt.date]) byDate[pt.date] = { date: pt.date } as Record<string, number>;
+    if (!byDate[pt.date]) byDate[pt.date] = { date: pt.date };
     byDate[pt.date][pt.ota_code] = pt.min_price;
   }
   const chartData = Object.values(byDate).sort((a, b) =>
-    String(a.date).localeCompare(String(b.date))
+    String(a["date"]).localeCompare(String(b["date"]))
   );
 
   // Compute Y-axis domain with 10% padding above/below
