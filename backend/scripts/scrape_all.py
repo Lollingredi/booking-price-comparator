@@ -54,7 +54,39 @@ def _make_engine():
     elif url.startswith("postgresql://") and "+asyncpg" not in url:
         url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
 
-    return create_async_engine(url, pool_pre_ping=True, pool_size=2, max_overflow=0)
+    # psycopg2 param non compreso da asyncpg → parametro corretto
+    url = url.replace("sslmode=require", "ssl=require")
+
+    # Compatibility shim: asyncpg < 0.29 non accetta il kwarg channel_binding
+    # passato dalle versioni recenti di SQLAlchemy.
+    try:
+        import asyncpg as _asyncpg
+        import inspect as _inspect
+        _orig = _asyncpg.connect
+        if "channel_binding" not in set(_inspect.signature(_orig).parameters):
+            import functools
+            @functools.wraps(_orig)
+            async def _compat(*a, **kw):
+                kw.pop("channel_binding", None)
+                return await _orig(*a, **kw)
+            _asyncpg.connect = _compat  # type: ignore[assignment]
+    except Exception:
+        pass  # asyncpg non installato o già patchato
+
+    try:
+        return create_async_engine(url, pool_pre_ping=True, pool_size=2, max_overflow=0)
+    except Exception as exc:
+        scheme = url.split("://")[0] if "://" in url else "?"
+        logger.error(
+            "Impossibile creare l'engine SQLAlchemy. Schema URL rilevato: '%s'.\n"
+            "Assicurati che DATABASE_URL nel GitHub Secret sia nel formato:\n"
+            "  postgres://utente:password@host/db\n"
+            "oppure: postgresql+asyncpg://utente:password@host/db\n"
+            "Se la password contiene caratteri speciali (@, #, %) devono essere URL-encoded.\n"
+            "Errore tecnico: %s",
+            scheme, exc,
+        )
+        sys.exit(1)
 
 
 async def main() -> None:
