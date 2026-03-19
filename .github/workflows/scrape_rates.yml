@@ -35,25 +35,17 @@ jobs:
       - name: Install Playwright browsers
         run: playwright install chromium --with-deps
 
+      - name: Fix stale migration stamp
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        working-directory: backend
+        run: python scripts/fix_db_state.py
+
       - name: Run database migrations
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         working-directory: backend
-        run: |
-          # Run migrations; if tables already exist without alembic tracking
-          # (DuplicateTableError), stamp the current revision and retry.
-          OUTPUT=$(alembic upgrade head 2>&1)
-          EXIT_CODE=$?
-          echo "$OUTPUT"
-          if [ $EXIT_CODE -ne 0 ]; then
-            if echo "$OUTPUT" | grep -q "DuplicateTableError\|already exists"; then
-              echo "Tables exist but not tracked by Alembic. Stamping 001 and retrying..."
-              alembic stamp 001
-              alembic upgrade head
-            else
-              exit $EXIT_CODE
-            fi
-          fi
+        run: alembic upgrade head
 
       - name: Run scraper
         env:
