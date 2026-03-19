@@ -1,7 +1,9 @@
 import logging
+import os
 from datetime import date, datetime, timedelta
 from decimal import Decimal
 
+import httpx
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 from sqlalchemy import func, select
@@ -19,11 +21,37 @@ from app.services.rate_fetcher import (
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
+_GH_OWNER = os.getenv("GITHUB_OWNER", "Lollingredi")
+_GH_REPO = os.getenv("GITHUB_REPO", "booking-price-comparator")
+_GH_WORKFLOW = "scrape_rates.yml"
+_GH_BRANCH = os.getenv("GITHUB_BRANCH", "master")
+
+
+async def _trigger_github_workflow(days_ahead: int) -> str | None:
+    """Dispatch workflow_dispatch on GitHub Actions. Returns error string or None on success."""
+    token = os.getenv("GITHUB_API_TOKEN")
+    if not token:
+        return "GITHUB_API_TOKEN non configurato su Render."
+    url = f"https://api.github.com/repos/{_GH_OWNER}/{_GH_REPO}/actions/workflows/{_GH_WORKFLOW}/dispatches"
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Accept": "application/vnd.github.v3+json",
+        "X-GitHub-Api-Version": "2022-11-28",
+    }
+    payload = {"ref": _GH_BRANCH, "inputs": {"days_ahead": str(days_ahead)}}
+    async with httpx.AsyncClient(timeout=15) as client:
+        resp = await client.post(url, json=payload, headers=headers)
+    if resp.status_code == 204:
+        return None
+    logger.error("GitHub workflow dispatch failed: %s %s", resp.status_code, resp.text)
+    return f"GitHub API error {resp.status_code}: {resp.text}"
+
 
 class FetchNowResult(BaseModel):
     scraped: int
     prices_found: int
     errors: list[str]
+    workflow_triggered: bool = False
 
 
 @router.post("/fetch-now", response_model=FetchNowResult)
@@ -35,16 +63,18 @@ async def fetch_now(
     days_ahead: int = Query(default=7, ge=1, le=30),
 ):
     """Manually trigger a price scrape for the user's hotel + all active competitors.
-    Scrapes `days_ahead` consecutive check-in dates starting from check_in."""
+    On Render (no Playwright) triggers the GitHub Actions workflow instead."""
     if not SCRAPING_AVAILABLE:
-        raise HTTPException(
-            status_code=503,
-            detail=(
-                "Lo scraping manuale non è disponibile su Render (Playwright non installato). "
-                "I prezzi vengono aggiornati automaticamente ogni 6 ore tramite GitHub Actions. "
-                "Puoi anche avviare manualmente il workflow 'Scrape Hotel Rates' dalla tab Actions del tuo repository GitHub."
-            ),
-        )
+        err = await _trigger_github_workflow(days_ahead)
+        if err:
+            raise HTTPException(
+                status_code=503,
+                detail=(
+                    f"Impossibile avviare il workflow GitHub Actions: {err} "
+                    "Vai su github.com → Actions → 'Scrape Hotel Rates' → Run workflow."
+                ),
+            )
+        return FetchNowResult(scraped=0, prices_found=0, errors=[], workflow_triggered=True)
     result = await db.execute(select(Hotel).where(Hotel.user_id == current_user.id))
     hotel = result.scalar_one_or_none()
     if not hotel:
