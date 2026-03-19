@@ -55,19 +55,27 @@ def do_run_migrations(connection: Connection) -> None:
 
 
 async def _auto_stamp_if_untracked(connection) -> None:
-    """If the application tables exist but alembic_version is missing,
+    """If the application tables exist but alembic_version is missing or empty,
     stamp the DB at revision 001 so Alembic knows the schema is current.
 
-    This handles the case where the schema was created outside of Alembic
-    (e.g. a previous Render deploy ran before migrations were set up).
+    This handles two cases:
+    - alembic_version doesn't exist: schema created outside Alembic entirely.
+    - alembic_version exists but is empty: a previous migration run crashed
+      before completing (Alembic creates the table before the transaction, so
+      it survives the rollback).
     """
     result = await connection.execute(text(
         "SELECT EXISTS(SELECT 1 FROM information_schema.tables"
         " WHERE table_schema='public' AND table_name='alembic_version')"
     ))
-    if result.scalar():
-        return  # alembic_version already exists, nothing to do
+    has_version_table = result.scalar()
 
+    if has_version_table:
+        result = await connection.execute(text("SELECT COUNT(*) FROM alembic_version"))
+        if result.scalar() > 0:
+            return  # tracking is in place, nothing to do
+
+    # alembic_version is missing or empty — check if our tables exist
     result = await connection.execute(text(
         "SELECT EXISTS(SELECT 1 FROM information_schema.tables"
         " WHERE table_schema='public' AND table_name='users')"
@@ -75,12 +83,13 @@ async def _auto_stamp_if_untracked(connection) -> None:
     if not result.scalar():
         return  # tables don't exist yet, let normal migration create them
 
-    # Tables exist but are untracked — create alembic_version and stamp 001.
-    await connection.execute(text(
-        "CREATE TABLE alembic_version"
-        " (version_num VARCHAR(32) NOT NULL,"
-        " CONSTRAINT alembic_version_pkc PRIMARY KEY (version_num))"
-    ))
+    # Tables exist but are untracked — stamp 001.
+    if not has_version_table:
+        await connection.execute(text(
+            "CREATE TABLE alembic_version"
+            " (version_num VARCHAR(32) NOT NULL,"
+            " CONSTRAINT alembic_version_pkc PRIMARY KEY (version_num))"
+        ))
     await connection.execute(text(
         "INSERT INTO alembic_version (version_num) VALUES ('001')"
     ))
