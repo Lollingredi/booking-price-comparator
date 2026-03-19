@@ -12,6 +12,7 @@ import type { ItalyHotel } from "../demo/italyHotels";
 import { hotelsApi } from "../api/hotels";
 import { ratesApi } from "../api/rates";
 import StartupLoader from "../components/StartupLoader";
+import ThemeToggle from "../components/ThemeToggle";
 
 // ─── Custom marker icons ──────────────────────────────────────────────────────
 
@@ -326,21 +327,21 @@ export default function OnboardingMap() {
   const allChecked = allCompetitors.length > 0 && selectedCompetitorIds.size === allCompetitors.length;
 
   return (
-    <div className="h-screen overflow-hidden flex flex-col bg-gray-50">
+    <div className="h-screen overflow-hidden flex flex-col bg-gray-50 dark:bg-slate-900">
       {loadingStep >= 0 && (
         <StartupLoader steps={loadingSteps} currentIndex={loadingStep} stepDetails={stepDetails} />
       )}
 
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between shrink-0">
+      <header className="bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 px-4 py-3 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-3">
           <span className="text-xl font-bold text-teal-600">RateScope</span>
-          <span className="hidden sm:block text-sm text-gray-400">|</span>
-          <span className="hidden sm:block text-sm text-gray-500">Configura il tuo account</span>
+          <span className="hidden sm:block text-sm text-gray-400 dark:text-slate-500">|</span>
+          <span className="hidden sm:block text-sm text-gray-500 dark:text-slate-400">Configura il tuo account</span>
         </div>
         <button
           onClick={() => { logout(); navigate("/login"); }}
-          className="text-sm text-gray-500 hover:text-gray-700 transition-colors"
+          className="text-sm text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200 transition-colors"
         >
           ← Esci
         </button>
@@ -578,6 +579,18 @@ export default function OnboardingMap() {
           )}
         </aside>
       </div>
+
+      {/* Footer */}
+      <footer className="shrink-0 border-t border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2.5 flex items-center justify-between">
+        <span className="text-xs text-gray-400 dark:text-slate-500">
+          Realizzato da{" "}
+          <a href="https://rediverse.cc/projects" target="_blank" rel="noopener noreferrer"
+            className="text-teal-600 hover:underline font-medium">
+            Redi Bako
+          </a>
+        </span>
+        <ThemeToggle />
+      </footer>
     </div>
   );
 }

@@ -10,6 +10,9 @@ import { useAuth } from "../contexts/AuthContext";
 import { ITALY_HOTELS, distanceKm, getCompetitorsWithin20km } from "../demo/italyHotels";
 import type { ItalyHotel } from "../demo/italyHotels";
 import StartupLoader from "../components/StartupLoader";
+import ThemeToggle from "../components/ThemeToggle";
+
+const DEMO_MAX_COMPETITORS = 3;
 
 // ─── Custom marker icons ──────────────────────────────────────────────────────
 
@@ -210,17 +213,19 @@ export default function DemoMap() {
   const [mobileView, setMobileView]                       = useState<"map" | "list">("map");
   const [loadingSteps, setLoadingSteps]                   = useState<string[]>([]);
   const [loadingStep, setLoadingStep]                     = useState<number>(-1);
+  const [limitReached, setLimitReached]                   = useState(false);
 
   const allCompetitors = useMemo(
     () => (selected ? getCompetitorsWithin20km(selected) : []),
     [selected]
   );
 
-  // Pre-select all competitors when hotel changes
+  // Pre-select first DEMO_MAX_COMPETITORS when hotel changes
   useEffect(() => {
-    if (!selected) { setSelectedCompetitorIds(new Set()); return; }
+    if (!selected) { setSelectedCompetitorIds(new Set()); setLimitReached(false); return; }
     const comps = getCompetitorsWithin20km(selected);
-    setSelectedCompetitorIds(new Set(comps.map((c) => c.id)));
+    setSelectedCompetitorIds(new Set(comps.slice(0, DEMO_MAX_COMPETITORS).map((c) => c.id)));
+    setLimitReached(comps.length > DEMO_MAX_COMPETITORS);
   }, [selected]);
 
   const checkedCompetitors = useMemo(
@@ -231,16 +236,30 @@ export default function DemoMap() {
   const toggleCompetitor = (id: string) => {
     setSelectedCompetitorIds((prev) => {
       const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
+      if (next.has(id)) {
+        next.delete(id);
+        setLimitReached(false);
+      } else {
+        if (next.size >= DEMO_MAX_COMPETITORS) {
+          setLimitReached(true);
+          return prev;
+        }
+        next.add(id);
+        if (next.size >= DEMO_MAX_COMPETITORS && allCompetitors.length > DEMO_MAX_COMPETITORS) {
+          setLimitReached(true);
+        }
+      }
       return next;
     });
   };
 
   const toggleAll = () => {
-    if (selectedCompetitorIds.size === allCompetitors.length) {
+    if (selectedCompetitorIds.size > 0) {
       setSelectedCompetitorIds(new Set());
+      setLimitReached(false);
     } else {
-      setSelectedCompetitorIds(new Set(allCompetitors.map((c) => c.id)));
+      setSelectedCompetitorIds(new Set(allCompetitors.slice(0, DEMO_MAX_COMPETITORS).map((c) => c.id)));
+      setLimitReached(allCompetitors.length > DEMO_MAX_COMPETITORS);
     }
   };
 
@@ -282,19 +301,19 @@ export default function DemoMap() {
   const allChecked = allCompetitors.length > 0 && selectedCompetitorIds.size === allCompetitors.length;
 
   return (
-    <div className="h-screen overflow-hidden flex flex-col bg-gray-50">
+    <div className="h-screen overflow-hidden flex flex-col bg-gray-50 dark:bg-slate-900">
       {loadingStep >= 0 && (
         <StartupLoader steps={loadingSteps} currentIndex={loadingStep} />
       )}
 
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between shrink-0">
+      <header className="bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 px-4 py-3 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-3">
           <span className="text-xl font-bold text-teal-600">RateScope</span>
-          <span className="hidden sm:block text-sm text-gray-400">|</span>
-          <span className="hidden sm:block text-sm text-gray-500">Demo interattiva</span>
+          <span className="hidden sm:block text-sm text-gray-400 dark:text-slate-500">|</span>
+          <span className="hidden sm:block text-sm text-gray-500 dark:text-slate-400">Demo interattiva</span>
         </div>
-        <button onClick={() => navigate("/login")} className="text-sm text-gray-500 hover:text-gray-700 transition-colors">
+        <button onClick={() => navigate("/login")} className="text-sm text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200 transition-colors">
           ← Torna al login
         </button>
       </header>
@@ -456,6 +475,25 @@ export default function DemoMap() {
                   </div>
                 </div>
 
+                {/* ── CTA registrazione ── */}
+                {limitReached && (
+                  <div className="shrink-0 bg-gradient-to-br from-teal-50 to-teal-100/60 border border-teal-200 rounded-xl p-3.5">
+                    <p className="text-xs font-semibold text-teal-800 mb-0.5">
+                      🔒 Limite demo raggiunto
+                    </p>
+                    <p className="text-xs text-teal-700 mb-2.5 leading-relaxed">
+                      In modalità demo puoi selezionare al massimo <strong>{DEMO_MAX_COMPETITORS} competitor</strong>.
+                      Registrati gratuitamente per monitorare tutti i competitor nella tua zona.
+                    </p>
+                    <button
+                      onClick={() => navigate("/register")}
+                      className="w-full bg-teal-600 hover:bg-teal-700 text-white font-semibold text-xs py-2 rounded-lg transition-colors"
+                    >
+                      Registrati gratis — sblocca tutto →
+                    </button>
+                  </div>
+                )}
+
                 {/* ── Lista competitor con checkbox ── */}
                 <div className="shrink-0">
                   <div className="flex items-center justify-between mb-2">
@@ -467,7 +505,7 @@ export default function DemoMap() {
                     </h3>
                     {allCompetitors.length > 0 && (
                       <button onClick={toggleAll} className="text-xs text-teal-600 hover:underline">
-                        {allChecked ? "Deseleziona tutti" : "Seleziona tutti"}
+                        {selectedCompetitorIds.size > 0 ? "Deseleziona tutti" : "Seleziona tutti"}
                       </button>
                     )}
                   </div>
@@ -508,7 +546,10 @@ export default function DemoMap() {
                         })}
                       </ul>
                       <p className="mt-1.5 text-xs text-gray-400 text-right">
-                        {selectedCompetitorIds.size} di {allCompetitors.length} selezionati
+                        {selectedCompetitorIds.size}/{DEMO_MAX_COMPETITORS} selezionati (demo)
+                        {allCompetitors.length > DEMO_MAX_COMPETITORS && (
+                          <span className="text-teal-600 ml-1">· {allCompetitors.length - DEMO_MAX_COMPETITORS} bloccati</span>
+                        )}
                       </p>
                     </>
                   )}
@@ -517,21 +558,36 @@ export default function DemoMap() {
               </div>{/* end scrollable area */}
 
               {/* ── CTA sticky al fondo ── */}
-              <div className="shrink-0 px-4 pt-3 pb-4 border-t border-gray-100 bg-white">
+              <div className="shrink-0 px-4 pt-3 pb-4 border-t border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-800 space-y-2">
                 <button
                   onClick={handleStart}
                   className="w-full bg-teal-600 hover:bg-teal-700 text-white font-semibold py-3 rounded-xl transition-colors text-sm shadow-sm"
                 >
                   Inizia demo con {checkedCompetitors.length} competitor →
                 </button>
-                <p className="text-center text-xs text-gray-400 mt-1.5">
-                  Vedrai dashboard, alert e storico prezzi in modalità demo
-                </p>
+                <button
+                  onClick={() => navigate("/register")}
+                  className="w-full text-xs text-teal-600 dark:text-teal-400 hover:text-teal-700 dark:hover:text-teal-300 font-medium py-1.5 rounded-lg border border-teal-200 dark:border-teal-700 hover:bg-teal-50 dark:hover:bg-teal-900/20 transition-colors"
+                >
+                  Registrati per accedere a tutte le funzioni →
+                </button>
               </div>
             </div>
           )}
         </aside>
       </div>
+
+      {/* Footer */}
+      <footer className="shrink-0 border-t border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2.5 flex items-center justify-between">
+        <span className="text-xs text-gray-400 dark:text-slate-500">
+          Realizzato da{" "}
+          <a href="https://rediverse.cc/projects" target="_blank" rel="noopener noreferrer"
+            className="text-teal-600 hover:underline font-medium">
+            Redi Bako
+          </a>
+        </span>
+        <ThemeToggle />
+      </footer>
     </div>
   );
 }

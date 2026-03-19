@@ -2,29 +2,11 @@ import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { useTheme } from "../contexts/ThemeContext";
 import ErrorBoundary from "./ErrorBoundary";
-
-function SunIcon() {
-  return (
-    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/>
-      <line x1="4.22" y1="4.22" x2="7.05" y2="7.05"/><line x1="16.95" y1="16.95" x2="19.78" y2="19.78"/>
-      <line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/>
-      <line x1="4.22" y1="19.78" x2="7.05" y2="16.95"/><line x1="16.95" y1="7.05" x2="19.78" y2="4.22"/>
-    </svg>
-  );
-}
-
-function MoonIcon() {
-  return (
-    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-    </svg>
-  );
-}
+import ThemeToggle from "./ThemeToggle";
 
 export default function Layout() {
   const { user, logout, isDemoMode, resetOnboarding } = useAuth();
-  const { theme, toggle } = useTheme();
+  useTheme(); // ensure theme is applied
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -108,13 +90,7 @@ export default function Layout() {
               Redi Bako
             </a>
           </span>
-          <button
-            onClick={toggle}
-            title={theme === "dark" ? "Passa al tema chiaro" : "Passa al tema scuro"}
-            className="p-2 rounded-lg text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
-          >
-            {theme === "dark" ? <SunIcon /> : <MoonIcon />}
-          </button>
+          <ThemeToggle />
         </div>
       </footer>
     </div>
