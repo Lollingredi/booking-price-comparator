@@ -35,6 +35,12 @@ jobs:
       - name: Install Playwright browsers
         run: playwright install chromium --with-deps
 
+      - name: Run database migrations
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        working-directory: backend
+        run: alembic upgrade head
+
       - name: Run scraper
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
