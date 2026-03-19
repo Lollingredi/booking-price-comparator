@@ -27,9 +27,16 @@ def upgrade() -> None:
     rule_type_enum.create(bind, checkfirst=True)
     severity_enum.create(bind, checkfirst=True)
 
-    # Guard each CREATE TABLE so this migration is idempotent:
-    # tables created outside Alembic (e.g. a previous deploy) won't cause a failure.
-    existing = set(sa.inspect(bind).get_table_names())
+    # Guard each CREATE TABLE so this migration is idempotent.
+    # sa.inspect() is unreliable in asyncpg-backed Alembic migrations; use
+    # a direct SQL query against information_schema instead.
+    rows = bind.execute(
+        sa.text(
+            "SELECT table_name FROM information_schema.tables"
+            " WHERE table_schema = 'public'"
+        )
+    )
+    existing = {row[0] for row in rows}
 
     if "users" not in existing:
         op.create_table(
