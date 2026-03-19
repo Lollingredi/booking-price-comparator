@@ -44,7 +44,6 @@ export default function Alerts() {
     setError(null);
     try {
       if (isDemoMode) {
-        // In demo mode, add a fake rule locally
         const fakeRule: AlertRule = {
           id: `demo-rule-${Date.now()}`,
           user_id: "demo-user-id",
@@ -91,29 +90,31 @@ export default function Alerts() {
     setRules((prev) => prev.filter((r) => r.id !== id));
   };
 
-  if (isLoading) return <div className="text-center py-16 text-gray-400">Caricamento...</div>;
+  if (isLoading) return <div className="text-center py-16 text-gray-400 dark:text-slate-500">Caricamento...</div>;
+
+  const inputClass = "w-full border border-gray-200 dark:border-slate-600 rounded-lg px-3 py-1.5 text-sm bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-400";
 
   return (
     <div className="max-w-2xl space-y-8">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Alert</h1>
-        <p className="text-gray-500 text-sm mt-1">Configura le regole di notifica e consulta lo storico alert.</p>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-slate-100">Alert</h1>
+        <p className="text-gray-500 dark:text-slate-400 text-sm mt-1">Configura le regole di notifica e consulta lo storico alert.</p>
       </div>
 
       {/* Rules list */}
-      <div className="bg-white rounded-[14px] border border-gray-200 p-6 space-y-4">
-        <h2 className="font-semibold text-gray-800">Regole attive</h2>
+      <div className="bg-white dark:bg-slate-800 rounded-[14px] border border-gray-200 dark:border-slate-700 p-6 space-y-4">
+        <h2 className="font-semibold text-gray-800 dark:text-slate-200">Regole attive</h2>
         {rules.length === 0 && (
-          <p className="text-sm text-gray-400">Nessuna regola configurata.</p>
+          <p className="text-sm text-gray-400 dark:text-slate-500">Nessuna regola configurata.</p>
         )}
-        <ul className="divide-y divide-gray-100">
+        <ul className="divide-y divide-gray-100 dark:divide-slate-700">
           {rules.map((rule) => (
             <li key={rule.id} className="flex items-center justify-between py-3">
               <div>
-                <p className="text-sm font-medium text-gray-800">
+                <p className="text-sm font-medium text-gray-800 dark:text-slate-200">
                   {RULE_TYPE_LABELS[rule.rule_type] ?? rule.rule_type}
                 </p>
-                <p className="text-xs text-gray-400">
+                <p className="text-xs text-gray-400 dark:text-slate-500">
                   Soglia: {rule.threshold_value}
                   {rule.rule_type === "competitor_price_drop" ? "%" : "€"} ·{" "}
                   Email: {rule.notify_email ? "sì" : "no"}
@@ -124,15 +125,15 @@ export default function Alerts() {
                   onClick={() => handleToggle(rule)}
                   className={`text-xs px-2 py-1 rounded-lg border transition-colors ${
                     rule.is_active
-                      ? "border-teal-200 text-teal-700 bg-teal-50"
-                      : "border-gray-200 text-gray-500 bg-gray-50"
+                      ? "border-teal-200 dark:border-teal-700 text-teal-700 dark:text-teal-400 bg-teal-50 dark:bg-teal-900/20"
+                      : "border-gray-200 dark:border-slate-600 text-gray-500 dark:text-slate-400 bg-gray-50 dark:bg-slate-700/50"
                   }`}
                 >
                   {rule.is_active ? "Attiva" : "Inattiva"}
                 </button>
                 <button
                   onClick={() => handleDelete(rule.id)}
-                  className="text-xs text-red-500 hover:text-red-700"
+                  className="text-xs text-red-500 hover:text-red-700 dark:hover:text-red-400"
                 >
                   Elimina
                 </button>
@@ -142,18 +143,18 @@ export default function Alerts() {
         </ul>
 
         {/* Create rule form */}
-        <form onSubmit={handleCreate} className="border-t border-gray-100 pt-4 space-y-3">
-          <h3 className="text-sm font-semibold text-gray-700">Nuova regola</h3>
+        <form onSubmit={handleCreate} className="border-t border-gray-100 dark:border-slate-700 pt-4 space-y-3">
+          <h3 className="text-sm font-semibold text-gray-700 dark:text-slate-300">Nuova regola</h3>
           {error && (
-            <p className="text-xs text-red-600 bg-red-50 rounded px-2 py-1">{error}</p>
+            <p className="text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded px-2 py-1">{error}</p>
           )}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Tipo</label>
+              <label className="block text-xs font-medium text-gray-600 dark:text-slate-400 mb-1">Tipo</label>
               <select
                 value={ruleType}
                 onChange={(e) => setRuleType(e.target.value)}
-                className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"
+                className={inputClass}
               >
                 <option value="undercut">Competitor più economico</option>
                 <option value="parity_issue">Problema di parità</option>
@@ -161,7 +162,7 @@ export default function Alerts() {
               </select>
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">
+              <label className="block text-xs font-medium text-gray-600 dark:text-slate-400 mb-1">
                 Soglia ({ruleType === "competitor_price_drop" ? "%" : "€"})
               </label>
               <input
@@ -170,11 +171,11 @@ export default function Alerts() {
                 onChange={(e) => setThreshold(Number(e.target.value))}
                 min={0}
                 step={0.5}
-                className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"
+                className={inputClass}
               />
             </div>
           </div>
-          <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+          <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-slate-300 cursor-pointer">
             <input
               type="checkbox"
               checked={notifyEmail}
@@ -195,7 +196,7 @@ export default function Alerts() {
 
       {/* Alert log */}
       <div>
-        <h2 className="font-semibold text-gray-800 mb-3">Storico alert</h2>
+        <h2 className="font-semibold text-gray-800 dark:text-slate-200 mb-3">Storico alert</h2>
         <AlertFeed
           logs={logs}
           onRead={(id) =>

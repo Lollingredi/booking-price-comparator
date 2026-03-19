@@ -82,34 +82,34 @@ export default function Dashboard() {
   return (
     <div className="space-y-8">
       {hasFakeKey && (
-        <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 flex items-start gap-3">
+        <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl px-4 py-3 flex items-start gap-3">
           <span className="text-amber-500 text-lg shrink-0 mt-0.5">⚠️</span>
-          <div className="text-sm text-amber-800">
+          <div className="text-sm text-amber-800 dark:text-amber-300">
             <span className="font-semibold">Booking.com Slug non valido</span> — il tuo hotel usa ancora una chiave demo ({myHotel?.booking_key}).
             I prezzi non possono essere recuperati.{" "}
-            <a href="/competitors" className="underline font-medium hover:text-amber-900">
+            <a href="/competitors" className="underline font-medium hover:text-amber-900 dark:hover:text-amber-200">
               Aggiorna il Booking.com Slug nelle impostazioni →
             </a>
           </div>
         </div>
       )}
       {hasNoKey && (
-        <div className="bg-orange-50 border border-orange-200 rounded-xl px-4 py-3 flex items-start gap-3">
+        <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-xl px-4 py-3 flex items-start gap-3">
           <span className="text-orange-500 text-lg shrink-0 mt-0.5">⚠️</span>
-          <div className="text-sm text-orange-800">
+          <div className="text-sm text-orange-800 dark:text-orange-300">
             <span className="font-semibold">Slug Booking.com non configurato</span> — nessun codice slug trovato per il tuo hotel.
             I prezzi non possono essere recuperati.{" "}
-            <a href="/competitors" className="underline font-medium hover:text-orange-900">
+            <a href="/competitors" className="underline font-medium hover:text-orange-900 dark:hover:text-orange-200">
               Imposta il Booking.com Slug nelle impostazioni →
             </a>
           </div>
         </div>
       )}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-slate-100">
           Buongiorno{user?.full_name ? `, ${user.full_name.split(" ")[0]}` : ""}
         </h1>
-        <p className="text-gray-500 text-sm mt-1">
+        <p className="text-gray-500 dark:text-slate-400 text-sm mt-1">
           Prezzi per {format(checkIn, "dd/MM/yyyy")} — {format(checkOut, "dd/MM/yyyy")}
         </p>
       </div>
@@ -147,12 +147,12 @@ export default function Dashboard() {
       {/* Rate table */}
       <div>
         <div className="flex items-center justify-between mb-3 gap-3 flex-wrap">
-          <h2 className="text-base font-semibold text-gray-800">Confronto prezzi OTA</h2>
+          <h2 className="text-base font-semibold text-gray-800 dark:text-slate-200">Confronto prezzi OTA</h2>
           {!isDemoMode && (
             <button
               onClick={handleFetchNow}
               disabled={fetching}
-              className="inline-flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-lg border border-teal-300 text-teal-700 hover:bg-teal-50 disabled:opacity-50 transition-colors"
+              className="inline-flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-lg border border-teal-300 dark:border-teal-700 text-teal-700 dark:text-teal-400 hover:bg-teal-50 dark:hover:bg-teal-900/20 disabled:opacity-50 transition-colors"
             >
               {fetching ? (
                 <>
@@ -169,12 +169,12 @@ export default function Dashboard() {
           )}
         </div>
         {fetchMsg && (
-          <div className={`mb-3 px-3 py-2 rounded-lg text-sm ${fetchMsg.ok ? "bg-teal-50 text-teal-800 border border-teal-200" : "bg-red-50 text-red-800 border border-red-200"}`}>
+          <div className={`mb-3 px-3 py-2 rounded-lg text-sm ${fetchMsg.ok ? "bg-teal-50 dark:bg-teal-900/20 text-teal-800 dark:text-teal-300 border border-teal-200 dark:border-teal-800" : "bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-300 border border-red-200 dark:border-red-800"}`}>
             {fetchMsg.text}
           </div>
         )}
         {loadingComparison ? (
-          <div className="text-center py-8 text-gray-400">Caricamento...</div>
+          <div className="text-center py-8 text-gray-400 dark:text-slate-500">Caricamento...</div>
         ) : (
           <RateTable rows={comparison} />
         )}
@@ -184,19 +184,19 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
           <div className="flex items-center justify-between mb-3 gap-3 flex-wrap">
-            <h2 className="text-base font-semibold text-gray-800">
+            <h2 className="text-base font-semibold text-gray-800 dark:text-slate-200">
               Prezzi prossimi 7 giorni
             </h2>
-            <span className="text-xs text-gray-400 bg-gray-50 border border-gray-200 rounded-full px-3 py-1">
+            <span className="text-xs text-gray-400 dark:text-slate-500 bg-gray-50 dark:bg-slate-700/50 border border-gray-200 dark:border-slate-700 rounded-full px-3 py-1">
               Prezzo minimo per data di check-in
             </span>
           </div>
-          <div className="bg-white rounded-[14px] border border-gray-200 p-4">
+          <div className="bg-white dark:bg-slate-800 rounded-[14px] border border-gray-200 dark:border-slate-700 p-4">
             <PriceChart data={history} isLoading={loadingHistory} />
           </div>
         </div>
         <div>
-          <h2 className="text-base font-semibold text-gray-800 mb-3">
+          <h2 className="text-base font-semibold text-gray-800 dark:text-slate-200 mb-3">
             Ultimi alert
           </h2>
           <AlertFeed

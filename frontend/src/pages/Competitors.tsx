@@ -13,21 +13,18 @@ export default function Competitors() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Hotel setup form
   const [hotelName, setHotelName] = useState("");
   const [hotelKey, setHotelKey] = useState("");
   const [city, setCity] = useState("");
   const [stars, setStars] = useState<number | "">(3);
   const [saving, setSaving] = useState(false);
-  const [isEditing, setIsEditing] = useState(true); // true = no hotel yet; false = hotel saved, read-only
+  const [isEditing, setIsEditing] = useState(true);
 
-  // Competitor form
   const [compName, setCompName] = useState("");
   const [compKey, setCompKey] = useState("");
   const [compStars, setCompStars] = useState<number | "">(3);
   const [addingComp, setAddingComp] = useState(false);
 
-  // Inline slug editing
   const [editingCompId, setEditingCompId] = useState<string | null>(null);
   const [editingSlug, setEditingSlug] = useState("");
 
@@ -57,7 +54,6 @@ export default function Competitors() {
   const handleSaveHotel = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isDemoMode) {
-      // In demo mode, update state locally only
       setHotel((prev) =>
         prev
           ? { ...prev, name: hotelName, booking_key: hotelKey, city, stars: stars !== "" ? stars : null }
@@ -195,37 +191,39 @@ export default function Competitors() {
   };
 
   if (isLoading) {
-    return <div className="text-center py-16 text-gray-400">Caricamento...</div>;
+    return <div className="text-center py-16 text-gray-400 dark:text-slate-500">Caricamento...</div>;
   }
+
+  const inputClass = "w-full border border-gray-200 dark:border-slate-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-400 disabled:bg-gray-50 dark:disabled:bg-slate-800 disabled:text-gray-600 dark:disabled:text-slate-500 disabled:cursor-default";
+  const labelClass = "block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1";
 
   return (
     <div className="max-w-2xl space-y-8">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Il tuo hotel</h1>
-        <p className="text-gray-500 text-sm mt-1">Configura il tuo hotel e i competitor da monitorare.</p>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-slate-100">Il tuo hotel</h1>
+        <p className="text-gray-500 dark:text-slate-400 text-sm mt-1">Configura il tuo hotel e i competitor da monitorare.</p>
       </div>
 
       {error && (
-        <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+        <p className="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg px-3 py-2">
           {error}
         </p>
       )}
 
       {/* Hotel form */}
-      <form onSubmit={handleSaveHotel} className="bg-white rounded-[14px] border border-gray-200 p-6 space-y-4">
+      <form onSubmit={handleSaveHotel} className="bg-white dark:bg-slate-800 rounded-[14px] border border-gray-200 dark:border-slate-700 p-6 space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="font-semibold text-gray-800">Impostazioni hotel</h2>
+          <h2 className="font-semibold text-gray-800 dark:text-slate-200">Impostazioni hotel</h2>
           {!isEditing && !isDemoMode && (
-            <span className="text-xs bg-teal-50 text-teal-700 border border-teal-200 px-2 py-0.5 rounded-full font-medium">
+            <span className="text-xs bg-teal-50 dark:bg-teal-900/30 text-teal-700 dark:text-teal-400 border border-teal-200 dark:border-teal-700 px-2 py-0.5 rounded-full font-medium">
               Configurato
             </span>
           )}
         </div>
 
-        {/* Search bar — only visible in edit mode */}
         {isEditing && (
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Cerca il tuo hotel su Booking.com</label>
+            <label className={labelClass}>Cerca il tuo hotel su Booking.com</label>
             {isDemoMode ? (
               <DemoHotelSearch onSelect={handleDemoHotelSelect} placeholder="Es. Hotel Bellavista Roma..." />
             ) : (
@@ -236,29 +234,29 @@ export default function Competitors() {
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Nome</label>
+            <label className={labelClass}>Nome</label>
             <input
               value={hotelName}
               onChange={(e) => setHotelName(e.target.value)}
               required
               disabled={!isEditing}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400 disabled:bg-gray-50 disabled:text-gray-600 disabled:cursor-default"
+              className={inputClass}
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Città</label>
+            <label className={labelClass}>Città</label>
             <input
               value={city}
               onChange={(e) => setCity(e.target.value)}
               required
               disabled={!isEditing}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400 disabled:bg-gray-50 disabled:text-gray-600 disabled:cursor-default"
+              className={inputClass}
             />
           </div>
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className={labelClass}>
               Booking.com Slug
               <a
                 href="https://www.booking.com"
@@ -274,10 +272,10 @@ export default function Competitors() {
               required
               disabled={!isEditing || isDemoMode}
               placeholder="es. baglioni-bologna"
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-teal-400 disabled:bg-gray-50 disabled:text-gray-600 disabled:cursor-default"
+              className={`${inputClass} font-mono`}
             />
             {isEditing && (
-              <p className="text-xs text-gray-400 mt-1">
+              <p className="text-xs text-gray-400 dark:text-slate-500 mt-1">
                 {isDemoMode
                   ? "Slug demo — non modificabile"
                   : "Auto-compilato dalla ricerca, oppure inserisci manualmente la parte tra /hotel/it/ e .html"}
@@ -285,7 +283,7 @@ export default function Competitors() {
             )}
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Stelle</label>
+            <label className={labelClass}>Stelle</label>
             <input
               type="number"
               value={stars}
@@ -293,7 +291,7 @@ export default function Competitors() {
               min={1}
               max={5}
               disabled={!isEditing}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400 disabled:bg-gray-50 disabled:text-gray-600 disabled:cursor-default"
+              className={inputClass}
             />
           </div>
         </div>
@@ -326,7 +324,7 @@ export default function Competitors() {
                     setStars(hotel.stars ?? "");
                     setIsEditing(false);
                   }}
-                  className="text-sm text-gray-500 hover:text-gray-700 px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                  className="text-sm text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200 px-4 py-2 border border-gray-200 dark:border-slate-600 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
                 >
                   Annulla
                 </button>
@@ -338,15 +336,15 @@ export default function Competitors() {
 
       {/* Competitors */}
       {hotel && (
-        <div className="bg-white rounded-[14px] border border-gray-200 p-6 space-y-4">
-          <h2 className="font-semibold text-gray-800">Competitor monitorati</h2>
+        <div className="bg-white dark:bg-slate-800 rounded-[14px] border border-gray-200 dark:border-slate-700 p-6 space-y-4">
+          <h2 className="font-semibold text-gray-800 dark:text-slate-200">Competitor monitorati</h2>
 
           {hotel.competitors.length > 0 ? (
-            <ul className="divide-y divide-gray-100">
+            <ul className="divide-y divide-gray-100 dark:divide-slate-700">
               {hotel.competitors.map((comp) => (
                 <li key={comp.id} className="flex items-center justify-between py-3 gap-3">
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-800">{comp.competitor_name}</p>
+                    <p className="text-sm font-medium text-gray-800 dark:text-slate-200">{comp.competitor_name}</p>
                     {editingCompId === comp.id ? (
                       <div className="flex items-center gap-1 mt-1">
                         <input
@@ -357,17 +355,17 @@ export default function Competitors() {
                             if (e.key === "Enter") handleUpdateCompetitorSlug(comp);
                             if (e.key === "Escape") setEditingCompId(null);
                           }}
-                          className="w-full border border-teal-300 rounded px-2 py-0.5 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-teal-400"
+                          className="w-full border border-teal-300 dark:border-teal-600 rounded px-2 py-0.5 text-xs font-mono bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-teal-400"
                         />
                         <button
                           onClick={() => handleUpdateCompetitorSlug(comp)}
-                          className="text-xs text-teal-600 hover:text-teal-800 font-medium px-1.5 py-0.5 shrink-0"
+                          className="text-xs text-teal-600 dark:text-teal-400 hover:text-teal-800 dark:hover:text-teal-300 font-medium px-1.5 py-0.5 shrink-0"
                         >
                           Salva
                         </button>
                         <button
                           onClick={() => setEditingCompId(null)}
-                          className="text-xs text-gray-400 hover:text-gray-600 px-1 py-0.5 shrink-0"
+                          className="text-xs text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300 px-1 py-0.5 shrink-0"
                         >
                           ✕
                         </button>
@@ -375,7 +373,7 @@ export default function Competitors() {
                     ) : (
                       <button
                         onClick={() => { setEditingCompId(comp.id); setEditingSlug(comp.competitor_booking_key); }}
-                        className="text-xs font-mono text-gray-400 hover:text-teal-600 hover:underline text-left"
+                        className="text-xs font-mono text-gray-400 dark:text-slate-500 hover:text-teal-600 dark:hover:text-teal-400 hover:underline text-left"
                         title="Clicca per modificare lo slug"
                       >
                         {comp.competitor_booking_key || <span className="italic">slug non impostato</span>}
@@ -384,7 +382,7 @@ export default function Competitors() {
                   </div>
                   <button
                     onClick={() => handleRemoveCompetitor(comp)}
-                    className="text-xs text-red-500 hover:text-red-700 px-2 py-1 shrink-0"
+                    className="text-xs text-red-500 hover:text-red-700 dark:hover:text-red-400 px-2 py-1 shrink-0"
                   >
                     Rimuovi
                   </button>
@@ -392,13 +390,13 @@ export default function Competitors() {
               ))}
             </ul>
           ) : (
-            <p className="text-sm text-gray-400">Nessun competitor aggiunto.</p>
+            <p className="text-sm text-gray-400 dark:text-slate-500">Nessun competitor aggiunto.</p>
           )}
 
-          <form onSubmit={handleAddCompetitor} className="border-t border-gray-100 pt-4 space-y-3">
-            <h3 className="text-sm font-semibold text-gray-700">Aggiungi competitor</h3>
+          <form onSubmit={handleAddCompetitor} className="border-t border-gray-100 dark:border-slate-700 pt-4 space-y-3">
+            <h3 className="text-sm font-semibold text-gray-700 dark:text-slate-300">Aggiungi competitor</h3>
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Cerca competitor</label>
+              <label className="block text-xs font-medium text-gray-600 dark:text-slate-400 mb-1">Cerca competitor</label>
               {isDemoMode ? (
                 <DemoHotelSearch
                   onSelect={(h) => { setCompName(h.name); setCompKey(h.bookingKey); setCompStars(h.stars); }}
@@ -410,30 +408,30 @@ export default function Competitors() {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Nome</label>
+                <label className="block text-xs font-medium text-gray-600 dark:text-slate-400 mb-1">Nome</label>
                 <input
                   value={compName}
                   onChange={(e) => setCompName(e.target.value)}
                   required
                   placeholder={isDemoMode ? "Es. Hotel Roma Palace" : ""}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"
+                  className="w-full border border-gray-200 dark:border-slate-600 rounded-lg px-3 py-1.5 text-sm bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-400"
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Booking.com Slug</label>
+                <label className="block text-xs font-medium text-gray-600 dark:text-slate-400 mb-1">Booking.com Slug</label>
                 <input
                   value={compKey}
                   onChange={(e) => setCompKey(e.target.value)}
                   required
                   placeholder={isDemoMode ? "Es. grand-hotel-milan" : "es. baglioni-bologna"}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-teal-400"
+                  className="w-full border border-gray-200 dark:border-slate-600 rounded-lg px-3 py-1.5 text-sm font-mono bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-400"
                 />
               </div>
             </div>
             <button
               type="submit"
               disabled={addingComp}
-              className="bg-gray-800 hover:bg-gray-900 text-white font-medium px-4 py-1.5 rounded-lg text-sm transition-colors disabled:opacity-60"
+              className="bg-gray-800 dark:bg-slate-600 hover:bg-gray-900 dark:hover:bg-slate-500 text-white font-medium px-4 py-1.5 rounded-lg text-sm transition-colors disabled:opacity-60"
             >
               {addingComp ? "Aggiunta..." : "Aggiungi"}
             </button>
