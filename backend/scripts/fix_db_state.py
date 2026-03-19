@@ -5,20 +5,21 @@ a previous run stamped the revision before the migration completed.
 Deleting the row lets `alembic upgrade head` re-run migration 001; the
 idempotent CREATE TABLE guards inside the migration will skip any tables
 that already exist and create the missing ones.
+
+Uses asyncpg directly (no SQLAlchemy) to avoid dialect-version
+compatibility issues (e.g. 'channel_binding' kwarg conflicts).
 """
 import asyncio
 import os
-
-from sqlalchemy import text
-from sqlalchemy.ext.asyncio import create_async_engine
+import re
 
 
-def _normalise_url(url: str) -> str:
-    if url.startswith("postgres://"):
-        url = url.replace("postgres://", "postgresql+asyncpg://", 1)
-    elif url.startswith("postgresql://") and "+asyncpg" not in url:
-        url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
-    return url.replace("sslmode=require", "ssl=require")
+def _asyncpg_dsn(url: str) -> str:
+    """Convert any postgresql:// variant to a plain DSN that asyncpg accepts."""
+    url = re.sub(r"^postgresql\+asyncpg://", "postgresql://", url)
+    url = re.sub(r"^postgres://", "postgresql://", url)
+    # asyncpg accepts sslmode=require in the DSN
+    return url
 
 
 async def fix() -> None:
@@ -27,38 +28,39 @@ async def fix() -> None:
         print("DATABASE_URL not set — nothing to fix")
         return
 
-    engine = create_async_engine(_normalise_url(raw))
+    import asyncpg  # imported here so missing dep gives a clear error
+
+    conn = await asyncpg.connect(_asyncpg_dsn(raw))
     try:
-        async with engine.begin() as conn:
-            # Does alembic_version exist?
-            r = await conn.execute(text(
-                "SELECT COUNT(*) FROM information_schema.tables"
-                " WHERE table_schema='public' AND table_name='alembic_version'"
-            ))
-            if not r.scalar():
-                print("No alembic_version table — nothing to fix")
-                return
+        # Does alembic_version exist?
+        count = await conn.fetchval(
+            "SELECT COUNT(*) FROM information_schema.tables"
+            " WHERE table_schema='public' AND table_name='alembic_version'"
+        )
+        if not count:
+            print("No alembic_version table — nothing to fix")
+            return
 
-            # Does it have a row?
-            r = await conn.execute(text("SELECT COUNT(*) FROM alembic_version"))
-            if not r.scalar():
-                print("alembic_version is empty — nothing to fix")
-                return
+        # Does it have a row?
+        count = await conn.fetchval("SELECT COUNT(*) FROM alembic_version")
+        if not count:
+            print("alembic_version is empty — nothing to fix")
+            return
 
-            # Is the schema actually complete?
-            r = await conn.execute(text(
-                "SELECT COUNT(*) FROM information_schema.tables"
-                " WHERE table_schema='public' AND table_name='hotels'"
-            ))
-            if r.scalar():
-                print("Schema looks complete — nothing to fix")
-                return
+        # Is hotels already present? (schema complete)
+        count = await conn.fetchval(
+            "SELECT COUNT(*) FROM information_schema.tables"
+            " WHERE table_schema='public' AND table_name='hotels'"
+        )
+        if count:
+            print("Schema looks complete — nothing to fix")
+            return
 
-            # Stale stamp: 001 is recorded but hotels is missing.
-            await conn.execute(text("DELETE FROM alembic_version"))
-            print("Cleared stale migration stamp — alembic upgrade head will re-run 001")
+        # Stale stamp: 001 recorded but hotels is missing — clear it.
+        await conn.execute("DELETE FROM alembic_version")
+        print("Cleared stale migration stamp — alembic upgrade head will re-run 001")
     finally:
-        await engine.dispose()
+        await conn.close()
 
 
 asyncio.run(fix())
