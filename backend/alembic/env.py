@@ -55,14 +55,11 @@ def do_run_migrations(connection: Connection) -> None:
 
 
 async def _auto_stamp_if_untracked(connection) -> None:
-    """If the application tables exist but alembic_version is missing or empty,
+    """If ALL application tables exist but alembic_version is missing or empty,
     stamp the DB at revision 001 so Alembic knows the schema is current.
 
-    This handles two cases:
-    - alembic_version doesn't exist: schema created outside Alembic entirely.
-    - alembic_version exists but is empty: a previous migration run crashed
-      before completing (Alembic creates the table before the transaction, so
-      it survives the rollback).
+    If only SOME tables exist (partial schema), do NOT stamp — let the migration
+    run so the idempotent guards in 001_initial_schema.py create the missing ones.
     """
     result = await connection.execute(text(
         "SELECT EXISTS(SELECT 1 FROM information_schema.tables"
@@ -75,15 +72,21 @@ async def _auto_stamp_if_untracked(connection) -> None:
         if result.scalar() > 0:
             return  # tracking is in place, nothing to do
 
-    # alembic_version is missing or empty — check if our tables exist
+    # Check if ALL tables from migration 001 are present.
+    # Only stamp when the full schema exists; if any table is missing let the
+    # migration run — the idempotent CREATE TABLE guards will skip existing ones
+    # and create the missing ones.
+    expected = {"users", "hotels", "hotel_competitors", "rate_snapshots", "alert_rules", "alert_logs"}
     result = await connection.execute(text(
-        "SELECT EXISTS(SELECT 1 FROM information_schema.tables"
-        " WHERE table_schema='public' AND table_name='users')"
-    ))
-    if not result.scalar():
-        return  # tables don't exist yet, let normal migration create them
+        "SELECT table_name FROM information_schema.tables"
+        " WHERE table_schema='public' AND table_name = ANY(:names)"
+    ), {"names": list(expected)})
+    existing = {row[0] for row in result}
 
-    # Tables exist but are untracked — stamp 001.
+    if existing != expected:
+        return  # partial schema — let the migration fill in the gaps
+
+    # All tables exist but are untracked — stamp 001.
     if not has_version_table:
         await connection.execute(text(
             "CREATE TABLE alembic_version"
