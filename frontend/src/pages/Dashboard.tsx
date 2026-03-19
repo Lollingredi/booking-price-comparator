@@ -47,8 +47,18 @@ export default function Dashboard() {
         setFetchMsg(null);
       }
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : String(e);
-      setFetchMsg({ ok: false, text: `Errore: ${msg}` });
+      const axErr = e as { response?: { status?: number; data?: { detail?: string } } };
+      if (axErr.response?.status === 503) {
+        setFetchMsg({
+          ok: false,
+          text:
+            axErr.response.data?.detail ??
+            "Lo scraping non è disponibile su Render. I prezzi vengono aggiornati automaticamente ogni 6 ore da GitHub Actions.",
+        });
+      } else {
+        const msg = e instanceof Error ? e.message : String(e);
+        setFetchMsg({ ok: false, text: `Errore: ${msg}` });
+      }
     } finally {
       setFetching(false);
     }

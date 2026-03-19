@@ -40,8 +40,9 @@ async def fetch_now(
         raise HTTPException(
             status_code=503,
             detail=(
-                "Scraping non disponibile su questo server. "
-                "I prezzi vengono aggiornati automaticamente da GitHub Actions ogni 6 ore."
+                "Lo scraping manuale non è disponibile su Render (Playwright non installato). "
+                "I prezzi vengono aggiornati automaticamente ogni 6 ore tramite GitHub Actions. "
+                "Puoi anche avviare manualmente il workflow 'Scrape Hotel Rates' dalla tab Actions del tuo repository GitHub."
             ),
         )
     result = await db.execute(select(Hotel).where(Hotel.user_id == current_user.id))
