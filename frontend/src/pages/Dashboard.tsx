@@ -39,7 +39,12 @@ export default function Dashboard() {
         format(checkOut, "yyyy-MM-dd"),
         7
       );
-      if (data.errors.length > 0) {
+      if (data.workflow_triggered) {
+        setFetchMsg({
+          ok: true,
+          text: "Workflow GitHub Actions avviato. I prezzi saranno aggiornati in ~2 minuti.",
+        });
+      } else if (data.errors.length > 0) {
         setFetchMsg({ ok: false, text: `Errori: ${data.errors.join(" | ")}` });
       } else {
         setFetchMsg({ ok: true, text: `Trovati ${data.prices_found} prezzi. Aggiornamento in corso…` });
@@ -48,17 +53,8 @@ export default function Dashboard() {
       }
     } catch (e: unknown) {
       const axErr = e as { response?: { status?: number; data?: { detail?: string } } };
-      if (axErr.response?.status === 503) {
-        setFetchMsg({
-          ok: false,
-          text:
-            axErr.response.data?.detail ??
-            "Lo scraping non è disponibile su Render. I prezzi vengono aggiornati automaticamente ogni 6 ore da GitHub Actions.",
-        });
-      } else {
-        const msg = e instanceof Error ? e.message : String(e);
-        setFetchMsg({ ok: false, text: `Errore: ${msg}` });
-      }
+      const msg = axErr.response?.data?.detail ?? (e instanceof Error ? e.message : String(e));
+      setFetchMsg({ ok: false, text: msg });
     } finally {
       setFetching(false);
     }
