@@ -8,6 +8,7 @@ import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import Competitors from "./pages/Competitors";
 import Alerts from "./pages/Alerts";
+import Settings from "./pages/Settings";
 import DemoMap from "./pages/DemoMap";
 import OnboardingMap from "./pages/OnboardingMap";
 
@@ -26,6 +27,7 @@ export default function App() {
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/competitors" element={<Competitors />} />
               <Route path="/alerts" element={<Alerts />} />
+              <Route path="/settings" element={<Settings />} />
             </Route>
           </Route>
           <Route path="*" element={<Navigate to="/dashboard" replace />} />

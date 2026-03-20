@@ -23,6 +23,7 @@ interface AuthContextValue {
   loginDemo: (hotel?: ItalyHotel, competitors?: ItalyHotel[]) => void;
   completeOnboarding: () => void;
   resetOnboarding: () => Promise<void>;
+  refreshMe: () => Promise<void>;
   logout: () => void;
 }
 
@@ -83,7 +84,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setDemoComparison(comparison);
       (window as any).__demoHotel = buildDemoHotelFromItaly(hotel, comps);
     } else {
-      // fallback: use default static data (imported lazily to avoid circular deps)
       import("../demo/demoData").then(({ DEMO_COMPARISON }) => setDemoComparison(DEMO_COMPARISON));
     }
   }, []);
@@ -99,6 +99,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setNeedsOnboarding(true);
   }, []);
 
+  const refreshMe = useCallback(async () => {
+    const { data } = await authApi.me();
+    setUser(data);
+  }, []);
+
   const logout = useCallback(() => {
     localStorage.removeItem("access_token");
     localStorage.removeItem("refresh_token");
@@ -111,7 +116,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, isLoading, isDemoMode, needsOnboarding, demoComparison, login, register, loginDemo, completeOnboarding, resetOnboarding, logout }}
+      value={{ user, isLoading, isDemoMode, needsOnboarding, demoComparison, login, register, loginDemo, completeOnboarding, resetOnboarding, refreshMe, logout }}
     >
       {children}
     </AuthContext.Provider>

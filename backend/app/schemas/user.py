@@ -38,3 +38,10 @@ class TokenRefresh(BaseModel):
 
 class TokenData(BaseModel):
     user_id: uuid.UUID | None = None
+
+
+class UserUpdate(BaseModel):
+    full_name: str | None = None
+    email: EmailStr | None = None
+    current_password: str | None = None
+    new_password: str | None = None

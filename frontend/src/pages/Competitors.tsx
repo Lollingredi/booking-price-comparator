@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import HotelSearch from "../components/HotelSearch";
 import DemoHotelSearch from "../components/DemoHotelSearch";
 import { hotelsApi } from "../api/hotels";
@@ -28,6 +28,22 @@ export default function Competitors() {
   const [editingCompId, setEditingCompId] = useState<string | null>(null);
   const [editingSlug, setEditingSlug] = useState("");
 
+  const [suggestions, setSuggestions] = useState<HotelSearchResult[]>([]);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+
+  const fetchSuggestions = useCallback(async () => {
+    if (isDemoMode) return;
+    setLoadingSuggestions(true);
+    try {
+      const { data } = await hotelsApi.getSuggestions();
+      setSuggestions(data);
+    } catch {
+      // suggestions are best-effort
+    } finally {
+      setLoadingSuggestions(false);
+    }
+  }, [isDemoMode]);
+
   useEffect(() => {
     if (isDemoMode) {
       setHotel(DEMO_HOTEL);
@@ -46,10 +62,11 @@ export default function Competitors() {
         setCity(data.city);
         setStars(data.stars ?? "");
         setIsEditing(false);
+        fetchSuggestions();
       })
       .catch(() => { setHotel(null); setIsEditing(true); })
       .finally(() => setIsLoading(false));
-  }, [isDemoMode]);
+  }, [isDemoMode, fetchSuggestions]);
 
   const handleSaveHotel = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -174,6 +191,20 @@ export default function Competitors() {
       setError("Errore nel salvataggio dello slug.");
     } finally {
       setEditingCompId(null);
+    }
+  };
+
+  const handleAddSuggestion = async (s: HotelSearchResult) => {
+    if (!hotel) return;
+    try {
+      const { data: comp } = await hotelsApi.addCompetitor({
+        competitor_name: s.name,
+        competitor_booking_key: s.hotel_key,
+      });
+      setHotel((prev) => prev ? { ...prev, competitors: [...prev.competitors, comp] } : prev);
+      setSuggestions((prev) => prev.filter((x) => x.hotel_key !== s.hotel_key));
+    } catch {
+      setError("Errore nell'aggiunta del competitor.");
     }
   };
 
@@ -333,6 +364,42 @@ export default function Competitors() {
           )}
         </div>
       </form>
+
+      {/* Suggestions */}
+      {!isDemoMode && hotel && suggestions.length > 0 && (
+        <div className="bg-white dark:bg-slate-800 rounded-[14px] border border-teal-200 dark:border-teal-800 p-6 space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="font-semibold text-gray-800 dark:text-slate-200">Competitor suggeriti</h2>
+            {loadingSuggestions && (
+              <span className="text-xs text-gray-400 dark:text-slate-500">Caricamento...</span>
+            )}
+          </div>
+          <p className="text-xs text-gray-500 dark:text-slate-400">
+            Hotel nella tua stessa città che non stai ancora monitorando.
+          </p>
+          <ul className="space-y-2">
+            {suggestions.map((s) => (
+              <li
+                key={s.hotel_key}
+                className="flex items-center justify-between gap-3 bg-gray-50 dark:bg-slate-700/40 rounded-lg px-3 py-2"
+              >
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-gray-800 dark:text-slate-200 truncate">{s.name}</p>
+                  {s.address && (
+                    <p className="text-xs text-gray-400 dark:text-slate-500 truncate">{s.address}</p>
+                  )}
+                </div>
+                <button
+                  onClick={() => handleAddSuggestion(s)}
+                  className="shrink-0 text-xs font-medium text-teal-600 dark:text-teal-400 border border-teal-200 dark:border-teal-700 hover:bg-teal-50 dark:hover:bg-teal-900/20 px-3 py-1 rounded-lg transition-colors"
+                >
+                  + Aggiungi
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {/* Competitors */}
       {hotel && (

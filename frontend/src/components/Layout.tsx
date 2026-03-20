@@ -51,6 +51,9 @@ export default function Layout() {
             <NavLink to="/dashboard" className={navLinkClass}>Dashboard</NavLink>
             <NavLink to="/competitors" className={navLinkClass}>Competitor</NavLink>
             <NavLink to="/alerts" className={navLinkClass}>Alert</NavLink>
+            {!isDemoMode && (
+              <NavLink to="/settings" className={navLinkClass}>Impostazioni</NavLink>
+            )}
           </nav>
           <div className="flex items-center gap-3">
             <span className="text-sm text-gray-500 dark:text-slate-400 hidden sm:block">{user?.email}</span>

@@ -136,6 +136,38 @@ async def delete_my_hotel(current_user: CurrentUser, db: DB):
     await db.delete(hotel)
 
 
+@router.get("/suggestions", response_model=list[HotelSearchResult])
+async def suggest_competitors(current_user: CurrentUser, db: DB):
+    """Return up to 6 hotels in the user's city that are not already configured as competitors."""
+    result = await db.execute(select(Hotel).where(Hotel.user_id == current_user.id))
+    hotel = result.scalar_one_or_none()
+    if not hotel or not hotel.city:
+        return []
+
+    await db.refresh(hotel, ["competitors"])
+    excluded = {hotel.booking_key} | {
+        c.competitor_booking_key for c in hotel.competitors if c.competitor_booking_key
+    }
+
+    try:
+        raw = await _get_rate_provider().search_hotel(hotel.city)
+    except Exception:
+        return []
+
+    suggestions: list[HotelSearchResult] = []
+    for r in raw:
+        if r.hotel_key and r.hotel_key not in excluded:
+            suggestions.append(HotelSearchResult(
+                hotel_key=r.hotel_key,
+                name=r.name,
+                address=r.address,
+                city=r.city,
+            ))
+            if len(suggestions) >= 6:
+                break
+    return suggestions
+
+
 @router.get("/search", response_model=list[HotelSearchResult])
 async def search_hotels(q: str, current_user: CurrentUser):
     if not q or len(q) < 2:

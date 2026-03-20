@@ -4,6 +4,7 @@ import AlertFeed from "../components/AlertFeed";
 import MetricCard from "../components/MetricCard";
 import PriceChart from "../components/PriceChart";
 import RateTable from "../components/RateTable";
+import GuidedTour, { useShouldShowTour } from "../components/GuidedTour";
 import { useAuth } from "../contexts/AuthContext";
 import { useComparison, useHistoryAll } from "../hooks/useRates";
 import { alertsApi } from "../api/alerts";
@@ -14,6 +15,7 @@ import { DEMO_ALERT_LOGS } from "../demo/demoData";
 
 export default function Dashboard() {
   const { user, isDemoMode } = useAuth();
+  const [showTour, closeTour] = useShouldShowTour(isDemoMode);
   const today = new Date();
   const [checkIn] = useState(today);
   const [checkOut] = useState(addDays(today, 1));
@@ -81,6 +83,7 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-8">
+      {showTour && <GuidedTour onClose={closeTour} />}
       {hasFakeKey && (
         <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl px-4 py-3 flex items-start gap-3">
           <span className="text-amber-500 text-lg shrink-0 mt-0.5">⚠️</span>

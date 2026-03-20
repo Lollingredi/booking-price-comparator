@@ -27,4 +27,7 @@ export const hotelsApi = {
     apiClient.get<HotelSearchResult[]>("/api/hotels/search", { params: { q } }),
 
   deleteMine: () => apiClient.delete("/api/hotels/mine"),
+
+  getSuggestions: () =>
+    apiClient.get<HotelSearchResult[]>("/api/hotels/suggestions"),
 };

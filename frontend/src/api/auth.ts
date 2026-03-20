@@ -12,4 +12,11 @@ export const authApi = {
     apiClient.post<Token>("/api/auth/refresh", { refresh_token }),
 
   me: () => apiClient.get<User>("/api/auth/me"),
+
+  updateMe: (data: {
+    full_name?: string;
+    email?: string;
+    current_password?: string;
+    new_password?: string;
+  }) => apiClient.patch<User>("/api/auth/me", data),
 };
