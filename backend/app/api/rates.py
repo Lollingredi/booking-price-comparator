@@ -52,6 +52,7 @@ class FetchNowResult(BaseModel):
     prices_found: int
     errors: list[str]
     workflow_triggered: bool = False
+    workflow_run_url: str | None = None
 
 
 @router.post("/fetch-now", response_model=FetchNowResult)
@@ -74,7 +75,8 @@ async def fetch_now(
                     "Vai su github.com → Actions → 'Scrape Hotel Rates' → Run workflow."
                 ),
             )
-        return FetchNowResult(scraped=0, prices_found=0, errors=[], workflow_triggered=True)
+        run_url = f"https://github.com/{_GH_OWNER}/{_GH_REPO}/actions/workflows/{_GH_WORKFLOW}"
+        return FetchNowResult(scraped=0, prices_found=0, errors=[], workflow_triggered=True, workflow_run_url=run_url)
     result = await db.execute(select(Hotel).where(Hotel.user_id == current_user.id))
     hotel = result.scalar_one_or_none()
     if not hotel:

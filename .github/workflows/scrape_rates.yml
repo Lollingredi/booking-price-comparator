@@ -53,3 +53,12 @@ jobs:
           SCRAPER_PROXY: ${{ secrets.SCRAPER_PROXY }}
           SCRAPE_DAYS_AHEAD: ${{ github.event.inputs.days_ahead || '7' }}
         run: python backend/scripts/scrape_all.py
+
+      - name: Upload debug HTML (se nessun prezzo trovato)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: scraper-debug-html
+          path: backend/app/services/_debug_*.html
+          if-no-files-found: ignore
+          retention-days: 3

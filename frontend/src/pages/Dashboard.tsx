@@ -31,10 +31,28 @@ export default function Dashboard() {
 
   const [fetching, setFetching] = useState(false);
   const [fetchMsg, setFetchMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [workflowRunUrl, setWorkflowRunUrl] = useState<string | null>(null);
+  const [countdown, setCountdown] = useState(0);
+
+  // Auto-refresh data when countdown reaches 0 (after workflow trigger)
+  useEffect(() => {
+    if (countdown <= 0) return;
+    const id = setTimeout(async () => {
+      const next = countdown - 1;
+      setCountdown(next);
+      if (next === 0) {
+        await Promise.all([refetchComparison(), refetchHistory()]);
+        setFetchMsg({ ok: true, text: "Dati aggiornati. Se i prezzi non compaiono, il workflow GitHub potrebbe non aver trovato tariffe — controlla il log." });
+      }
+    }, 1000);
+    return () => clearTimeout(id);
+  }, [countdown, refetchComparison, refetchHistory]);
 
   const handleFetchNow = async () => {
     setFetching(true);
     setFetchMsg(null);
+    setWorkflowRunUrl(null);
+    setCountdown(0);
     try {
       const { data } = await ratesApi.fetchNow(
         format(checkIn, "yyyy-MM-dd"),
@@ -42,9 +60,11 @@ export default function Dashboard() {
         7
       );
       if (data.workflow_triggered) {
+        if (data.workflow_run_url) setWorkflowRunUrl(data.workflow_run_url);
+        setCountdown(120);
         setFetchMsg({
           ok: true,
-          text: "Workflow GitHub Actions avviato. I prezzi saranno aggiornati in ~2 minuti.",
+          text: "Workflow GitHub Actions avviato. I dati verranno ricaricati automaticamente in ~2 minuti.",
         });
       } else if (data.errors.length > 0) {
         setFetchMsg({ ok: false, text: `Errori: ${data.errors.join(" | ")}` });
@@ -172,8 +192,25 @@ export default function Dashboard() {
           )}
         </div>
         {fetchMsg && (
-          <div className={`mb-3 px-3 py-2 rounded-lg text-sm ${fetchMsg.ok ? "bg-teal-50 dark:bg-teal-900/20 text-teal-800 dark:text-teal-300 border border-teal-200 dark:border-teal-800" : "bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-300 border border-red-200 dark:border-red-800"}`}>
-            {fetchMsg.text}
+          <div className={`mb-3 px-3 py-2 rounded-lg text-sm flex items-start justify-between gap-3 ${fetchMsg.ok ? "bg-teal-50 dark:bg-teal-900/20 text-teal-800 dark:text-teal-300 border border-teal-200 dark:border-teal-800" : "bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-300 border border-red-200 dark:border-red-800"}`}>
+            <span>
+              {fetchMsg.text}
+              {countdown > 0 && (
+                <span className="ml-2 font-mono font-semibold">
+                  ({Math.floor(countdown / 60)}:{String(countdown % 60).padStart(2, "0")})
+                </span>
+              )}
+            </span>
+            {workflowRunUrl && (
+              <a
+                href={workflowRunUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="shrink-0 underline font-medium hover:opacity-80"
+              >
+                Log GitHub →
+              </a>
+            )}
           </div>
         )}
         {loadingComparison ? (

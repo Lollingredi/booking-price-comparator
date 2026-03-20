@@ -128,15 +128,27 @@ async def fetch_all_hotels_rates(db: AsyncSession, check_in: date, check_out: da
 
     processed = 0
     errors = 0
+    prices_found = 0
     for key in all_keys:
         try:
-            await fetch_and_save_rates(db, key, check_in, check_out)
+            snaps = await fetch_and_save_rates(db, key, check_in, check_out)
             processed += 1
+            prices_found += len(snaps)
+            if len(snaps) == 0:
+                logger.warning(
+                    "fetch_all_hotels_rates: 0 prezzi per slug=%s (%s→%s) — "
+                    "Booking.com potrebbe bloccare le richieste da questo IP. "
+                    "Configura SCRAPER_PROXY nei GitHub Secrets.",
+                    key, check_in, check_out,
+                )
         except Exception as exc:
             logger.error("Failed to fetch rates for key=%s: %s", key, exc)
             errors += 1
         await asyncio.sleep(1)
 
     await db.commit()
-    logger.info("fetch_all_hotels_rates done: processed=%d errors=%d", processed, errors)
-    return processed, errors
+    logger.info(
+        "fetch_all_hotels_rates done: processed=%d errors=%d prices_found=%d",
+        processed, errors, prices_found,
+    )
+    return processed, errors, prices_found
