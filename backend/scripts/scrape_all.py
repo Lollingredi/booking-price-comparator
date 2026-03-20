@@ -99,6 +99,7 @@ async def main() -> None:
     today = date.today()
     total_processed = 0
     total_errors = 0
+    total_prices = 0
 
     # ── 1. Scraping ────────────────────────────────────────────────────────────
     for offset in range(DAYS_AHEAD):
@@ -106,13 +107,24 @@ async def main() -> None:
         check_out = check_in + timedelta(days=1)
         logger.info("Scraping notte %s → %s (%d/%d)", check_in, check_out, offset + 1, DAYS_AHEAD)
         async with AsyncSessionLocal() as session:
-            processed, errors = await fetch_all_hotels_rates(session, check_in, check_out)
+            processed, errors, prices = await fetch_all_hotels_rates(session, check_in, check_out)
             total_processed += processed
             total_errors += errors
+            total_prices += prices
 
     logger.info(
-        "Scraping completato — processati: %d, errori: %d", total_processed, total_errors
+        "Scraping completato — processati: %d, errori: %d, prezzi salvati: %d",
+        total_processed, total_errors, total_prices,
     )
+
+    if total_prices == 0 and total_processed > 0:
+        logger.error(
+            "ATTENZIONE: %d hotel processati ma 0 prezzi trovati! "
+            "Booking.com probabilmente blocca le richieste da GitHub Actions. "
+            "Soluzione: aggiungi SCRAPER_PROXY nei GitHub Secrets "
+            "(es. proxy residenziale Bright Data / Oxylabs).",
+            total_processed,
+        )
 
     # ── 2. Alerting ────────────────────────────────────────────────────────────
     check_in_alert = today + timedelta(days=1)  # valuta sulla prima notte futura
@@ -122,8 +134,11 @@ async def main() -> None:
 
     await engine.dispose()
 
-    if total_errors:
-        logger.warning("%d errori durante lo scraping — controlla i log sopra.", total_errors)
+    if total_errors or (total_prices == 0 and total_processed > 0):
+        logger.warning(
+            "Scraping terminato con problemi — errori: %d, prezzi: %d",
+            total_errors, total_prices,
+        )
         sys.exit(1)
 
 

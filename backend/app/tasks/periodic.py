@@ -28,14 +28,15 @@ def fetch_all_rates(self):
 
         async with AsyncSessionLocal() as db:
             try:
-                processed, errors = await fetch_all_hotels_rates(db, check_in, check_out)
+                processed, errors, prices = await fetch_all_hotels_rates(db, check_in, check_out)
                 logger.info(
-                    "[fetch_all_rates] Done: processed=%d errors=%d check_in=%s",
+                    "[fetch_all_rates] Done: processed=%d errors=%d prices=%d check_in=%s",
                     processed,
                     errors,
+                    prices,
                     check_in,
                 )
-                return {"processed": processed, "errors": errors}
+                return {"processed": processed, "errors": errors, "prices": prices}
             except Exception as exc:
                 logger.error("[fetch_all_rates] Unexpected error: %s", exc)
                 raise self.retry(exc=exc, countdown=60)
