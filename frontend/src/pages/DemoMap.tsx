@@ -315,8 +315,6 @@ export default function DemoMap() {
     });
   };
 
-  const allChecked = allCompetitors.length > 0 && selectedCompetitorIds.size === allCompetitors.length;
-
   return (
     <div className="h-screen overflow-hidden flex flex-col bg-gray-50 dark:bg-slate-900">
       {loadingStep >= 0 && (
