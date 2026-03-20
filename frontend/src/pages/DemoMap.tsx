@@ -10,6 +10,10 @@ import { useAuth } from "../contexts/AuthContext";
 import { ITALY_HOTELS, distanceKm, getCompetitorsWithin20km } from "../demo/italyHotels";
 import type { ItalyHotel } from "../demo/italyHotels";
 import StartupLoader from "../components/StartupLoader";
+import ThemeToggle from "../components/ThemeToggle";
+import { useTheme } from "../contexts/ThemeContext";
+
+const DEMO_MAX_COMPETITORS = 3;
 
 // ─── Custom marker icons ──────────────────────────────────────────────────────
 
@@ -74,11 +78,11 @@ function StepBanner({ hotelChosen, competitorsChosen }: StepBannerProps) {
   function Chip({ n, label, state }: { n: number; label: string; state: StepState }) {
     const circle =
       state === "done"   ? "bg-teal-600 border-teal-600 text-white" :
-      state === "active" ? "bg-teal-600 border-teal-600 text-white ring-4 ring-teal-100" :
-                           "bg-white border-gray-300 text-gray-400";
+      state === "active" ? "bg-teal-600 border-teal-600 text-white ring-4 ring-teal-100 dark:ring-teal-900" :
+                           "bg-white dark:bg-slate-700 border-gray-300 dark:border-slate-500 text-gray-400 dark:text-slate-400";
     const text =
-      state === "future" ? "text-gray-400" :
-      state === "active" ? "text-teal-700 font-semibold" : "text-teal-600";
+      state === "future" ? "text-gray-400 dark:text-slate-500" :
+      state === "active" ? "text-teal-700 dark:text-teal-400 font-semibold" : "text-teal-600 dark:text-teal-400";
 
     return (
       <div className="flex items-center gap-1.5">
@@ -91,11 +95,11 @@ function StepBanner({ hotelChosen, competitorsChosen }: StepBannerProps) {
   }
 
   function Arrow() {
-    return <span className="text-gray-300 text-sm mx-1 sm:mx-2">→</span>;
+    return <span className="text-gray-300 dark:text-slate-600 text-sm mx-1 sm:mx-2">→</span>;
   }
 
   return (
-    <div className="bg-white border-b border-gray-200 px-4 py-2.5 flex items-center justify-center gap-1 shrink-0">
+    <div className="bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 px-4 py-2.5 flex items-center justify-center gap-1 shrink-0">
       <Chip n={1} label="Scegli il tuo hotel"     state={s1} />
       <Arrow />
       <Chip n={2} label="Seleziona i competitor"  state={s2} />
@@ -108,6 +112,8 @@ function StepBanner({ hotelChosen, competitorsChosen }: StepBannerProps) {
 // ─── Search box ───────────────────────────────────────────────────────────────
 
 function HotelSearchBox({ onSelect }: { onSelect: (h: ItalyHotel) => void }) {
+  const { resolved } = useTheme();
+  const dk = resolved === "dark";
   const [query, setQuery]   = useState("");
   const [open, setOpen]     = useState(false);
   const [cursor, setCursor] = useState(-1);
@@ -140,6 +146,13 @@ function HotelSearchBox({ onSelect }: { onSelect: (h: ItalyHotel) => void }) {
     else if (e.key === "Escape") setOpen(false);
   };
 
+  const bg    = dk ? "#1e293b" : "white";
+  const bdCol = dk ? "#475569" : "#E5E7EB";
+  const txt   = dk ? "#f1f5f9" : "#111827";
+  const sub   = dk ? "#94a3b8" : "#6B7280";
+  const hov   = dk ? "#0f3d35" : "#F0FDFA";
+  const sep   = dk ? "#334155" : "#F9FAFB";
+
   return (
     <div style={{ position: "relative" }}>
       <div style={{ position: "relative" }}>
@@ -156,9 +169,9 @@ function HotelSearchBox({ onSelect }: { onSelect: (h: ItalyHotel) => void }) {
           style={{
             width: "100%", boxSizing: "border-box",
             paddingLeft: 32, paddingRight: query ? 28 : 10, paddingTop: 9, paddingBottom: 9,
-            border: "1px solid #E5E7EB",
+            border: `1px solid ${bdCol}`,
             borderRadius: open && suggestions.length ? "8px 8px 0 0" : 8,
-            fontSize: 13, outline: "none", background: "white",
+            fontSize: 13, outline: "none", background: bg, color: txt,
           }}
         />
         {query && (
@@ -173,17 +186,17 @@ function HotelSearchBox({ onSelect }: { onSelect: (h: ItalyHotel) => void }) {
           onMouseDown={(e) => e.preventDefault()}
           style={{
             position: "absolute", top: "100%", left: 0, right: 0, zIndex: 50,
-            margin: 0, padding: 0, listStyle: "none", background: "white",
-            border: "1px solid #E5E7EB", borderTop: "none", borderRadius: "0 0 8px 8px",
-            boxShadow: "0 8px 24px rgba(0,0,0,0.12)", maxHeight: 280, overflowY: "auto",
+            margin: 0, padding: 0, listStyle: "none", background: bg,
+            border: `1px solid ${bdCol}`, borderTop: "none", borderRadius: "0 0 8px 8px",
+            boxShadow: "0 8px 24px rgba(0,0,0,0.25)", maxHeight: 280, overflowY: "auto",
           }}
         >
           {suggestions.map((h, i) => (
             <li key={h.id} onClick={() => { clearTimeout(closeTimer.current!); pick(h); }} onMouseEnter={() => setCursor(i)}
-              style={{ padding: "8px 12px", cursor: "pointer", background: cursor === i ? "#F0FDFA" : "white", borderTop: i > 0 ? "1px solid #F9FAFB" : "none", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+              style={{ padding: "8px 12px", cursor: "pointer", background: cursor === i ? hov : bg, borderTop: i > 0 ? `1px solid ${sep}` : "none", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
               <div style={{ minWidth: 0 }}>
-                <div style={{ fontWeight: 600, fontSize: 13, color: "#111827", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{h.name}</div>
-                <div style={{ fontSize: 11, color: "#6B7280" }}>{h.city} · {h.region}</div>
+                <div style={{ fontWeight: 600, fontSize: 13, color: txt, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{h.name}</div>
+                <div style={{ fontSize: 11, color: sub }}>{h.city} · {h.region}</div>
               </div>
               <div style={{ fontSize: 11, color: "#F59E0B", whiteSpace: "nowrap", flexShrink: 0 }}>{"★".repeat(h.stars)}</div>
             </li>
@@ -191,7 +204,7 @@ function HotelSearchBox({ onSelect }: { onSelect: (h: ItalyHotel) => void }) {
         </ul>
       )}
       {open && query.trim() && suggestions.length === 0 && (
-        <div style={{ position: "absolute", top: "100%", left: 0, right: 0, zIndex: 50, background: "white", border: "1px solid #E5E7EB", borderTop: "none", borderRadius: "0 0 8px 8px", padding: "10px 14px", fontSize: 13, color: "#9CA3AF" }}>
+        <div style={{ position: "absolute", top: "100%", left: 0, right: 0, zIndex: 50, background: bg, border: `1px solid ${bdCol}`, borderTop: "none", borderRadius: "0 0 8px 8px", padding: "10px 14px", fontSize: 13, color: "#9CA3AF" }}>
           Nessun hotel trovato
         </div>
       )}
@@ -210,17 +223,26 @@ export default function DemoMap() {
   const [mobileView, setMobileView]                       = useState<"map" | "list">("map");
   const [loadingSteps, setLoadingSteps]                   = useState<string[]>([]);
   const [loadingStep, setLoadingStep]                     = useState<number>(-1);
+  const [limitReached, setLimitReached]                   = useState(false);
+
+  // Lock document scroll — the page is a full-viewport flex layout
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = prev; };
+  }, []);
 
   const allCompetitors = useMemo(
     () => (selected ? getCompetitorsWithin20km(selected) : []),
     [selected]
   );
 
-  // Pre-select all competitors when hotel changes
+  // Pre-select first DEMO_MAX_COMPETITORS when hotel changes
   useEffect(() => {
-    if (!selected) { setSelectedCompetitorIds(new Set()); return; }
+    if (!selected) { setSelectedCompetitorIds(new Set()); setLimitReached(false); return; }
     const comps = getCompetitorsWithin20km(selected);
-    setSelectedCompetitorIds(new Set(comps.map((c) => c.id)));
+    setSelectedCompetitorIds(new Set(comps.slice(0, DEMO_MAX_COMPETITORS).map((c) => c.id)));
+    setLimitReached(comps.length > DEMO_MAX_COMPETITORS);
   }, [selected]);
 
   const checkedCompetitors = useMemo(
@@ -231,16 +253,30 @@ export default function DemoMap() {
   const toggleCompetitor = (id: string) => {
     setSelectedCompetitorIds((prev) => {
       const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
+      if (next.has(id)) {
+        next.delete(id);
+        setLimitReached(false);
+      } else {
+        if (next.size >= DEMO_MAX_COMPETITORS) {
+          setLimitReached(true);
+          return prev;
+        }
+        next.add(id);
+        if (next.size >= DEMO_MAX_COMPETITORS && allCompetitors.length > DEMO_MAX_COMPETITORS) {
+          setLimitReached(true);
+        }
+      }
       return next;
     });
   };
 
   const toggleAll = () => {
-    if (selectedCompetitorIds.size === allCompetitors.length) {
+    if (selectedCompetitorIds.size > 0) {
       setSelectedCompetitorIds(new Set());
+      setLimitReached(false);
     } else {
-      setSelectedCompetitorIds(new Set(allCompetitors.map((c) => c.id)));
+      setSelectedCompetitorIds(new Set(allCompetitors.slice(0, DEMO_MAX_COMPETITORS).map((c) => c.id)));
+      setLimitReached(allCompetitors.length > DEMO_MAX_COMPETITORS);
     }
   };
 
@@ -282,19 +318,19 @@ export default function DemoMap() {
   const allChecked = allCompetitors.length > 0 && selectedCompetitorIds.size === allCompetitors.length;
 
   return (
-    <div className="h-screen overflow-hidden flex flex-col bg-gray-50">
+    <div className="h-screen overflow-hidden flex flex-col bg-gray-50 dark:bg-slate-900">
       {loadingStep >= 0 && (
         <StartupLoader steps={loadingSteps} currentIndex={loadingStep} />
       )}
 
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between shrink-0">
+      <header className="bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 px-4 py-3 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-3">
           <span className="text-xl font-bold text-teal-600">RateScope</span>
-          <span className="hidden sm:block text-sm text-gray-400">|</span>
-          <span className="hidden sm:block text-sm text-gray-500">Demo interattiva</span>
+          <span className="hidden sm:block text-sm text-gray-400 dark:text-slate-500">|</span>
+          <span className="hidden sm:block text-sm text-gray-500 dark:text-slate-400">Demo interattiva</span>
         </div>
-        <button onClick={() => navigate("/login")} className="text-sm text-gray-500 hover:text-gray-700 transition-colors">
+        <button onClick={() => navigate("/login")} className="text-sm text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200 transition-colors">
           ← Torna al login
         </button>
       </header>
@@ -306,13 +342,13 @@ export default function DemoMap() {
       />
 
       {/* Mobile tab bar — only on <lg */}
-      <div className="lg:hidden flex shrink-0 bg-white border-b border-gray-200">
+      <div className="lg:hidden flex shrink-0 bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700">
         <button
           onClick={() => setMobileView("map")}
           className={`flex-1 py-2.5 text-sm font-medium transition-colors ${
             mobileView === "map"
               ? "text-teal-600 border-b-2 border-teal-600"
-              : "text-gray-500 hover:text-gray-700"
+              : "text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200"
           }`}
         >
           🗺 Mappa
@@ -322,7 +358,7 @@ export default function DemoMap() {
           className={`flex-1 py-2.5 text-sm font-medium transition-colors ${
             mobileView === "list"
               ? "text-teal-600 border-b-2 border-teal-600"
-              : "text-gray-500 hover:text-gray-700"
+              : "text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200"
           }`}
         >
           ☰ Lista{selected ? ` · ${checkedCompetitors.length} sel.` : ""}
@@ -412,10 +448,10 @@ export default function DemoMap() {
         </div>
 
         {/* SIDE PANEL */}
-        <aside className={`w-full lg:w-[420px] shrink-0 bg-white border-t lg:border-t-0 lg:border-l border-gray-200 flex flex-col overflow-hidden ${mobileView === "map" ? "hidden lg:flex" : "flex"}`}>
+        <aside className={`w-full lg:w-[420px] shrink-0 bg-white dark:bg-slate-800 border-t lg:border-t-0 lg:border-l border-gray-200 dark:border-slate-700 flex flex-col overflow-hidden ${mobileView === "map" ? "hidden lg:flex" : "flex"}`}>
 
           {/* Search bar */}
-          <div className="p-3 border-b border-gray-100 shrink-0">
+          <div className="p-3 border-b border-gray-100 dark:border-slate-700 shrink-0">
             <HotelSearchBox onSelect={handleSelectHotel} />
           </div>
 
@@ -423,12 +459,12 @@ export default function DemoMap() {
             /* Empty state */
             <div className="flex flex-col items-center justify-center flex-1 py-12 px-6 text-center overflow-y-auto">
               <div className="text-5xl mb-4">🗺️</div>
-              <h2 className="text-lg font-semibold text-gray-700 mb-2">Scegli il tuo hotel</h2>
-              <p className="text-sm text-gray-500 max-w-xs">
+              <h2 className="text-lg font-semibold text-gray-700 dark:text-slate-200 mb-2">Scegli il tuo hotel</h2>
+              <p className="text-sm text-gray-500 dark:text-slate-400 max-w-xs">
                 Cerca per nome o città, oppure clicca sulla mappa.{" "}
                 <strong>{ITALY_HOTELS.length} hotel</strong> nelle province di Modena, Bologna, Ferrara e Ravenna.
               </p>
-              <div className="mt-6 flex flex-col gap-2 text-xs text-gray-400 text-left">
+              <div className="mt-6 flex flex-col gap-2 text-xs text-gray-400 dark:text-slate-500 text-left">
                 <div className="flex items-center gap-2"><span className="w-4 h-4 rounded-full bg-teal-500 shrink-0"></span>Il tuo hotel</div>
                 <div className="flex items-center gap-2"><span className="w-4 h-4 rounded-full bg-amber-400 shrink-0"></span>Competitor selezionato</div>
                 <div className="flex items-center gap-2"><span className="w-4 h-4 rounded-full border-2 border-amber-400 bg-gray-200 shrink-0"></span>Competitor non incluso</div>
@@ -441,25 +477,44 @@ export default function DemoMap() {
               <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4 pb-24">
 
                 {/* ── Mio hotel ── */}
-                <div className="bg-teal-50 border border-teal-200 rounded-xl p-4 shrink-0">
+                <div className="bg-teal-50 dark:bg-teal-900/20 border border-teal-200 dark:border-teal-800 rounded-xl p-4 shrink-0">
                   <div className="flex items-start justify-between gap-2">
                     <div>
-                      <p className="text-xs font-medium text-teal-600 uppercase tracking-wide mb-0.5">Il tuo hotel</p>
-                      <h2 className="text-base font-bold text-gray-900 leading-tight">{selected.name}</h2>
-                      <p className="text-sm text-gray-500">{selected.city}, {selected.region}</p>
+                      <p className="text-xs font-medium text-teal-600 dark:text-teal-400 uppercase tracking-wide mb-0.5">Il tuo hotel</p>
+                      <h2 className="text-base font-bold text-gray-900 dark:text-slate-100 leading-tight">{selected.name}</h2>
+                      <p className="text-sm text-gray-500 dark:text-slate-400">{selected.city}, {selected.region}</p>
                       <div className="flex items-center gap-2 mt-1">
                         <Stars n={selected.stars} />
-                        <span className="text-xs text-gray-400">{selected.stars} stelle</span>
+                        <span className="text-xs text-gray-400 dark:text-slate-500">{selected.stars} stelle</span>
                       </div>
                     </div>
-                    <button onClick={() => { setSelected(null); setMobileView("map"); }} className="text-gray-400 hover:text-gray-600 text-lg leading-none shrink-0 mt-0.5">✕</button>
+                    <button onClick={() => { setSelected(null); setMobileView("map"); }} className="text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300 text-lg leading-none shrink-0 mt-0.5">✕</button>
                   </div>
                 </div>
+
+                {/* ── CTA registrazione ── */}
+                {limitReached && (
+                  <div className="shrink-0 bg-gradient-to-br from-teal-50 dark:from-teal-900/20 to-teal-100/60 dark:to-teal-900/10 border border-teal-200 dark:border-teal-800 rounded-xl p-3.5">
+                    <p className="text-xs font-semibold text-teal-800 dark:text-teal-300 mb-0.5">
+                      🔒 Limite demo raggiunto
+                    </p>
+                    <p className="text-xs text-teal-700 dark:text-teal-400 mb-2.5 leading-relaxed">
+                      In modalità demo puoi selezionare al massimo <strong>{DEMO_MAX_COMPETITORS} competitor</strong>.
+                      Registrati gratuitamente per monitorare tutti i competitor nella tua zona.
+                    </p>
+                    <button
+                      onClick={() => navigate("/register")}
+                      className="w-full bg-teal-600 hover:bg-teal-700 text-white font-semibold text-xs py-2 rounded-lg transition-colors"
+                    >
+                      Registrati gratis — sblocca tutto →
+                    </button>
+                  </div>
+                )}
 
                 {/* ── Lista competitor con checkbox ── */}
                 <div className="shrink-0">
                   <div className="flex items-center justify-between mb-2">
-                    <h3 className="text-sm font-semibold text-gray-700">
+                    <h3 className="text-sm font-semibold text-gray-700 dark:text-slate-200">
                       Competitor entro 20 km
                       <span className="ml-2 bg-amber-100 text-amber-700 text-xs font-bold px-2 py-0.5 rounded-full">
                         {allCompetitors.length}
@@ -467,7 +522,7 @@ export default function DemoMap() {
                     </h3>
                     {allCompetitors.length > 0 && (
                       <button onClick={toggleAll} className="text-xs text-teal-600 hover:underline">
-                        {allChecked ? "Deseleziona tutti" : "Seleziona tutti"}
+                        {selectedCompetitorIds.size > 0 ? "Deseleziona tutti" : "Seleziona tutti"}
                       </button>
                     )}
                   </div>
@@ -485,20 +540,20 @@ export default function DemoMap() {
                               onClick={() => toggleCompetitor(c.id)}
                               className={`flex items-center gap-3 rounded-lg px-3 py-2 cursor-pointer border transition-colors ${
                                 checked
-                                  ? "bg-amber-50 border-amber-200 hover:bg-amber-100"
-                                  : "bg-gray-50 border-gray-200 hover:bg-gray-100"
+                                  ? "bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800 hover:bg-amber-100 dark:hover:bg-amber-900/30"
+                                  : "bg-gray-50 dark:bg-slate-700/40 border-gray-200 dark:border-slate-700 hover:bg-gray-100 dark:hover:bg-slate-700"
                               }`}
                             >
                               <div className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${
-                                checked ? "bg-amber-400 border-amber-400" : "border-gray-300 bg-white"
+                                checked ? "bg-amber-400 border-amber-400" : "border-gray-300 dark:border-slate-500 bg-white dark:bg-slate-700"
                               }`}>
                                 {checked && <span className="text-white text-[9px] font-bold leading-none">✓</span>}
                               </div>
                               <div className="flex-1 min-w-0">
-                                <p className={`text-xs font-medium truncate ${checked ? "text-gray-800" : "text-gray-400"}`}>{c.name}</p>
+                                <p className={`text-xs font-medium truncate ${checked ? "text-gray-800 dark:text-slate-200" : "text-gray-400 dark:text-slate-500"}`}>{c.name}</p>
                                 <div className="flex items-center gap-1.5 mt-0.5">
                                   <Stars n={c.stars} />
-                                  <span className="text-[10px] text-gray-400">
+                                  <span className="text-[10px] text-gray-400 dark:text-slate-500">
                                     {distanceKm(selected.lat, selected.lng, c.lat, c.lng).toFixed(1)} km
                                   </span>
                                 </div>
@@ -507,8 +562,11 @@ export default function DemoMap() {
                           );
                         })}
                       </ul>
-                      <p className="mt-1.5 text-xs text-gray-400 text-right">
-                        {selectedCompetitorIds.size} di {allCompetitors.length} selezionati
+                      <p className="mt-1.5 text-xs text-gray-400 dark:text-slate-500 text-right">
+                        {selectedCompetitorIds.size}/{DEMO_MAX_COMPETITORS} selezionati (demo)
+                        {allCompetitors.length > DEMO_MAX_COMPETITORS && (
+                          <span className="text-teal-600 ml-1">· {allCompetitors.length - DEMO_MAX_COMPETITORS} bloccati</span>
+                        )}
                       </p>
                     </>
                   )}
@@ -517,21 +575,36 @@ export default function DemoMap() {
               </div>{/* end scrollable area */}
 
               {/* ── CTA sticky al fondo ── */}
-              <div className="shrink-0 px-4 pt-3 pb-4 border-t border-gray-100 bg-white">
+              <div className="shrink-0 px-4 pt-3 pb-4 border-t border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-800 space-y-2">
                 <button
                   onClick={handleStart}
                   className="w-full bg-teal-600 hover:bg-teal-700 text-white font-semibold py-3 rounded-xl transition-colors text-sm shadow-sm"
                 >
                   Inizia demo con {checkedCompetitors.length} competitor →
                 </button>
-                <p className="text-center text-xs text-gray-400 mt-1.5">
-                  Vedrai dashboard, alert e storico prezzi in modalità demo
-                </p>
+                <button
+                  onClick={() => navigate("/register")}
+                  className="w-full text-xs text-teal-600 dark:text-teal-400 hover:text-teal-700 dark:hover:text-teal-300 font-medium py-1.5 rounded-lg border border-teal-200 dark:border-teal-700 hover:bg-teal-50 dark:hover:bg-teal-900/20 transition-colors"
+                >
+                  Registrati per accedere a tutte le funzioni →
+                </button>
               </div>
             </div>
           )}
         </aside>
       </div>
+
+      {/* Footer */}
+      <footer className="shrink-0 border-t border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2.5 flex items-center justify-between">
+        <span className="text-xs text-gray-400 dark:text-slate-500">
+          Realizzato da{" "}
+          <a href="https://rediverse.cc/projects" target="_blank" rel="noopener noreferrer"
+            className="text-teal-600 hover:underline font-medium">
+            Redi Bako
+          </a>
+        </span>
+        <ThemeToggle />
+      </footer>
     </div>
   );
 }

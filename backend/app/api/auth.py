@@ -9,7 +9,7 @@ from sqlalchemy import select
 from app.api.deps import CurrentUser, DB
 from app.config import settings
 from app.models.user import User
-from app.schemas.user import Token, TokenRefresh, UserCreate, UserLogin, UserOut
+from app.schemas.user import Token, TokenRefresh, UserCreate, UserLogin, UserOut, UserUpdate
 
 router = APIRouter()
 
@@ -96,3 +96,35 @@ async def refresh_token(payload: TokenRefresh, db: DB):
 @router.get("/me", response_model=UserOut)
 async def me(current_user: CurrentUser):
     return current_user
+
+
+@router.patch("/me", response_model=UserOut)
+async def update_me(payload: UserUpdate, current_user: CurrentUser, db: DB):
+    """Update profile name, email, or password. Email/password changes require current_password."""
+    needs_password = payload.email is not None or payload.new_password is not None
+    if needs_password:
+        if not payload.current_password:
+            raise HTTPException(status_code=400, detail="current_password richiesta per modificare email o password.")
+        if not _verify_password(payload.current_password, current_user.hashed_password):
+            raise HTTPException(status_code=400, detail="Password attuale non corretta.")
+
+    result = await db.execute(select(User).where(User.id == current_user.id))
+    user = result.scalar_one()
+
+    if payload.full_name is not None:
+        user.full_name = payload.full_name
+
+    if payload.email is not None:
+        dup = await db.execute(select(User).where(User.email == payload.email, User.id != user.id))
+        if dup.scalar_one_or_none():
+            raise HTTPException(status_code=400, detail="Email già in uso da un altro account.")
+        user.email = payload.email
+
+    if payload.new_password is not None:
+        if len(payload.new_password) < 8:
+            raise HTTPException(status_code=400, detail="La nuova password deve essere di almeno 8 caratteri.")
+        user.hashed_password = _hash_password(payload.new_password)
+
+    await db.commit()
+    await db.refresh(user)
+    return user
