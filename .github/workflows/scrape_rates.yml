@@ -47,6 +47,41 @@ jobs:
         working-directory: backend
         run: alembic upgrade head
 
+      - name: Diagnostica DB (hotel e slug)
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          python - <<'PYEOF'
+          import asyncio, os, sys
+          from pathlib import Path
+          sys.path.insert(0, str(Path("backend").resolve()))
+          url = os.environ["DATABASE_URL"]
+          if url.startswith("postgres://"):
+              url = url.replace("postgres://", "postgresql+asyncpg://", 1)
+          elif url.startswith("postgresql://") and "+asyncpg" not in url:
+              url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
+          url = url.replace("sslmode=require", "ssl=require")
+          from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+          from sqlalchemy.orm import sessionmaker
+          from sqlalchemy import select
+          async def run():
+              engine = create_async_engine(url, pool_pre_ping=True)
+              Session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+              from app.models.hotel import Hotel, HotelCompetitor
+              async with Session() as db:
+                  hotels = (await db.execute(select(Hotel))).scalars().all()
+                  print(f"Hotel nel DB: {len(hotels)}")
+                  for h in hotels:
+                      print(f"  [{h.id}] '{h.name}' booking_key={h.booking_key!r}")
+                      comps = (await db.execute(
+                          select(HotelCompetitor).where(HotelCompetitor.hotel_id == h.id)
+                      )).scalars().all()
+                      for c in comps:
+                          print(f"    competitor '{c.competitor_name}' key={c.competitor_booking_key!r} active={c.is_active}")
+              await engine.dispose()
+          asyncio.run(run())
+          PYEOF
+
       - name: Run scraper
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}

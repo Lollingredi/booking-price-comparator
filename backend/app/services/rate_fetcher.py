@@ -112,10 +112,19 @@ async def fetch_all_hotels_rates(db: AsyncSession, check_in: date, check_out: da
     hotels_result = await db.execute(select(Hotel))
     hotels = hotels_result.scalars().all()
 
+    logger.info("fetch_all_hotels_rates: trovati %d hotel nel DB", len(hotels))
+
     all_keys: set[str] = set()
     for hotel in hotels:
+        key_val = repr(hotel.booking_key)
         if hotel.booking_key and hotel.booking_key.strip():
             all_keys.add(hotel.booking_key)
+            logger.info("  hotel '%s' → booking_key=%s (OK)", hotel.name, key_val)
+        else:
+            logger.warning(
+                "  hotel '%s' → booking_key=%s (VUOTO — vai su Impostazioni e imposta il Booking.com Slug)",
+                hotel.name, key_val,
+            )
         comps_result = await db.execute(
             select(HotelCompetitor).where(
                 HotelCompetitor.hotel_id == hotel.id,
@@ -123,8 +132,15 @@ async def fetch_all_hotels_rates(db: AsyncSession, check_in: date, check_out: da
             )
         )
         for comp in comps_result.scalars().all():
+            comp_key_val = repr(comp.competitor_booking_key)
             if comp.competitor_booking_key and comp.competitor_booking_key.strip():
                 all_keys.add(comp.competitor_booking_key)
+                logger.info("    competitor '%s' → booking_key=%s (OK)", comp.competitor_name, comp_key_val)
+            else:
+                logger.warning(
+                    "    competitor '%s' → booking_key=%s (VUOTO — slug mancante)",
+                    comp.competitor_name, comp_key_val,
+                )
 
     processed = 0
     errors = 0
