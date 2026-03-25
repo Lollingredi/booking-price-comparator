@@ -7,7 +7,8 @@ from decimal import Decimal
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
-from app.models import AlertRule, AlertLog, Hotel, HotelCompetitor, RateSnapshot
+from app.models import AlertRule, AlertLog, Hotel, HotelCompetitor, RateSnapshot, User
+from app.services.email_service import build_alert_html, send_alert_email
 
 logger = logging.getLogger(__name__)
 
@@ -45,6 +46,15 @@ async def _create_alert_log(
     )
     db.add(log)
     logger.info("ALERT [%s] user=%s: %s", severity.upper(), user_id, message)
+
+    # Send email notification if enabled on this rule
+    if rule.notify_email:
+        user_result = await db.execute(select(User).where(User.id == user_id))
+        user = user_result.scalar_one_or_none()
+        if user and user.email:
+            subject = f"RateScope Alert: {severity.upper()} — {rule.rule_type.replace('_', ' ').title()}"
+            body = build_alert_html(message, severity)
+            await send_alert_email(user.email, subject, body)
 
 
 async def evaluate_alerts_for_user(

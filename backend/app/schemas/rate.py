@@ -45,3 +45,12 @@ class HistoryPoint(BaseModel):
     ota_code: str
     ota_name: str
     min_price: Decimal
+
+
+class CalendarDay(BaseModel):
+    """One day in the calendar heatmap."""
+    check_in: date
+    own_min: Decimal | None = None
+    best_competitor: Decimal | None = None
+    rank: int | None = None
+    total_hotels: int = 0

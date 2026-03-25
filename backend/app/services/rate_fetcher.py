@@ -16,12 +16,37 @@ RATE_FRESHNESS_SECONDS = 3600  # 1 hour
 
 
 def _get_provider() -> "RateProvider | None":
-    """Return the active rate provider, or None if Playwright is not installed."""
+    """Return the primary rate provider (Booking.com), or None if Playwright is not installed."""
     try:
         from app.services.booking_scraper import booking_provider
         return booking_provider
     except ImportError:
         return None
+
+
+def _get_all_providers() -> list[RateProvider]:
+    """Return all available rate providers (Booking + Expedia + Hotels.com)."""
+    providers: list[RateProvider] = []
+    try:
+        from app.services.booking_scraper import booking_provider
+        providers.append(booking_provider)
+    except ImportError:
+        pass
+    try:
+        import os
+        proxy = os.getenv("SCRAPER_PROXY") or None
+        from app.services.expedia_scraper import ExpediaProvider
+        providers.append(ExpediaProvider(proxy=proxy))
+    except ImportError:
+        pass
+    try:
+        import os
+        proxy = os.getenv("SCRAPER_PROXY") or None
+        from app.services.hotels_com_scraper import HotelsComProvider
+        providers.append(HotelsComProvider(proxy=proxy))
+    except ImportError:
+        pass
+    return providers
 
 
 # True only when Playwright is installed (i.e. in the GitHub Actions environment).
@@ -52,21 +77,32 @@ async def fetch_and_save_rates(
     check_in: date,
     check_out: date,
 ) -> list[RateSnapshot]:
-    provider = _get_provider()
-    if provider is None:
+    providers = _get_all_providers()
+    if not providers:
         raise RuntimeError(
             "Playwright non è installato su questo server. "
             "Lo scraping viene eseguito automaticamente da GitHub Actions ogni 6 ore."
         )
     fetched_at = datetime.now(timezone.utc)
-    rate_results = await provider.fetch_rates(
-        hotel_key,
-        check_in.isoformat(),
-        check_out.isoformat(),
-    )
+
+    # Fetch from all available OTA providers
+    all_rate_results = []
+    for provider in providers:
+        try:
+            results = await provider.fetch_rates(
+                hotel_key,
+                check_in.isoformat(),
+                check_out.isoformat(),
+            )
+            all_rate_results.extend(results)
+        except Exception as exc:
+            logger.warning(
+                "Provider %s failed for key=%s: %s",
+                type(provider).__name__, hotel_key, exc,
+            )
 
     snapshots = []
-    for r in rate_results:
+    for r in all_rate_results:
         snap = RateSnapshot(
             hotel_booking_key=hotel_key,
             ota_code=r.ota_code,
@@ -82,8 +118,8 @@ async def fetch_and_save_rates(
 
     await db.flush()
     logger.info(
-        "Saved %d rate snapshots for hotel_key=%s check_in=%s",
-        len(snapshots), hotel_key, check_in,
+        "Saved %d rate snapshots for hotel_key=%s check_in=%s (providers: %d)",
+        len(snapshots), hotel_key, check_in, len(providers),
     )
     return snapshots
 

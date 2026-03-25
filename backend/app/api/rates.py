@@ -11,7 +11,7 @@ from sqlalchemy import func, select
 from app.api.deps import CurrentUser, DB
 from app.models.hotel import Hotel, HotelCompetitor
 from app.models.rate import RateSnapshot
-from app.schemas.rate import ComparisonRow, HistoryPoint, HotelRates, RateSnapshotOut
+from app.schemas.rate import CalendarDay, ComparisonRow, HistoryPoint, HotelRates, RateSnapshotOut
 from app.services.rate_fetcher import (
     SCRAPING_AVAILABLE,
     fetch_and_save_rates,
@@ -366,3 +366,83 @@ async def get_comparison(
         r.rank = len(sortable) + 1
 
     return rows
+
+
+@router.get("/calendar", response_model=list[CalendarDay])
+async def get_calendar(
+    current_user: CurrentUser,
+    db: DB,
+    days: int = Query(default=30, ge=1, le=90),
+):
+    """Return per-day pricing summary for the calendar heatmap (next N days)."""
+    result = await db.execute(select(Hotel).where(Hotel.user_id == current_user.id))
+    hotel = result.scalar_one_or_none()
+    if not hotel:
+        return []
+
+    comps_result = await db.execute(
+        select(HotelCompetitor).where(
+            HotelCompetitor.hotel_id == hotel.id,
+            HotelCompetitor.is_active == True,
+        )
+    )
+    competitors = comps_result.scalars().all()
+
+    own_key = hotel.booking_key
+    comp_keys = [c.competitor_booking_key for c in competitors if c.competitor_booking_key]
+    all_keys = ([own_key] if own_key else []) + comp_keys
+
+    if not all_keys:
+        return []
+
+    today = date.today()
+    from_date = today + timedelta(days=1)
+    to_date = today + timedelta(days=days)
+
+    # Single batch query: min price per hotel_key per check_in_date
+    snaps_result = await db.execute(
+        select(
+            RateSnapshot.hotel_booking_key,
+            RateSnapshot.check_in_date,
+            func.min(RateSnapshot.price).label("min_price"),
+        )
+        .where(
+            RateSnapshot.hotel_booking_key.in_(all_keys),
+            RateSnapshot.check_in_date >= from_date,
+            RateSnapshot.check_in_date <= to_date,
+        )
+        .group_by(
+            RateSnapshot.hotel_booking_key,
+            RateSnapshot.check_in_date,
+        )
+    )
+    # Build: {check_in_date: {hotel_key: min_price}}
+    price_map: dict[date, dict[str, Decimal]] = {}
+    for row in snaps_result.all():
+        day_map = price_map.setdefault(row.check_in_date, {})
+        day_map[row.hotel_booking_key] = row.min_price
+
+    calendar: list[CalendarDay] = []
+    for offset in range(1, days + 1):
+        d = today + timedelta(days=offset)
+        day_prices = price_map.get(d, {})
+
+        own_min = day_prices.get(own_key) if own_key else None
+        comp_mins = [day_prices[k] for k in comp_keys if k in day_prices]
+        best_comp = min(comp_mins) if comp_mins else None
+
+        # Rank own hotel among all
+        all_mins = sorted(v for v in day_prices.values())
+        rank = None
+        if own_min is not None and all_mins:
+            rank = all_mins.index(own_min) + 1
+
+        calendar.append(CalendarDay(
+            check_in=d,
+            own_min=own_min,
+            best_competitor=best_comp,
+            rank=rank,
+            total_hotels=len(all_mins),
+        ))
+
+    return calendar

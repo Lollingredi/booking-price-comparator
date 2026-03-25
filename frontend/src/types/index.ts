@@ -96,3 +96,11 @@ export interface Token {
   refresh_token: string;
   token_type: string;
 }
+
+export interface CalendarDay {
+  check_in: string;
+  own_min: number | null;
+  best_competitor: number | null;
+  rank: number | null;
+  total_hotels: number;
+}

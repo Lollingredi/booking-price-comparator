@@ -1,12 +1,13 @@
 import { addDays, format } from "date-fns";
 import { useState, useEffect } from "react";
 import AlertFeed from "../components/AlertFeed";
+import CalendarHeatmap from "../components/CalendarHeatmap";
 import MetricCard from "../components/MetricCard";
 import PriceChart from "../components/PriceChart";
 import RateTable from "../components/RateTable";
 import GuidedTour, { useShouldShowTour } from "../components/GuidedTour";
 import { useAuth } from "../contexts/AuthContext";
-import { useComparison, useHistoryAll } from "../hooks/useRates";
+import { useComparison, useHistoryAll, useCalendar } from "../hooks/useRates";
 import { alertsApi } from "../api/alerts";
 import { hotelsApi } from "../api/hotels";
 import { ratesApi } from "../api/rates";
@@ -28,6 +29,7 @@ export default function Dashboard() {
   const { data: comparison, isLoading: loadingComparison, refetch: refetchComparison } = useComparison(checkIn, checkOut);
   const ownHotel = comparison.find((r) => r.is_own_hotel);
   const { data: history, isLoading: loadingHistory, refetch: refetchHistory } = useHistoryAll(7);
+  const { data: calendarData, isLoading: loadingCalendar } = useCalendar(30);
 
   const [fetching, setFetching] = useState(false);
   const [fetchMsg, setFetchMsg] = useState<{ ok: boolean; text: string } | null>(null);
@@ -218,6 +220,19 @@ export default function Dashboard() {
         ) : (
           <RateTable rows={comparison} />
         )}
+      </div>
+
+      {/* Calendar heatmap */}
+      <div>
+        <div className="flex items-center justify-between mb-3 gap-3 flex-wrap">
+          <h2 className="text-base font-semibold text-gray-800 dark:text-slate-200">
+            Calendario prezzi — prossimi 30 giorni
+          </h2>
+          <span className="text-xs text-gray-400 dark:text-slate-500 bg-gray-50 dark:bg-slate-700/50 border border-gray-200 dark:border-slate-700 rounded-full px-3 py-1">
+            Colore = posizionamento vs competitor
+          </span>
+        </div>
+        <CalendarHeatmap data={calendarData} isLoading={loadingCalendar} />
       </div>
 
       {/* Chart + alerts side by side */}
