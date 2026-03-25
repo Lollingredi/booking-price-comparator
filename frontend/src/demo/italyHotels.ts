@@ -198,8 +198,10 @@ export function distanceKm(lat1: number, lng1: number, lat2: number, lng2: numbe
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
+export const COMPETITOR_RADIUS_KM = 20;
+
 export function getCompetitorsWithin20km(hotel: ItalyHotel): ItalyHotel[] {
   return ITALY_HOTELS.filter(
-    (h) => h.id !== hotel.id && distanceKm(hotel.lat, hotel.lng, h.lat, h.lng) <= 20
+    (h) => h.id !== hotel.id && distanceKm(hotel.lat, hotel.lng, h.lat, h.lng) <= COMPETITOR_RADIUS_KM
   );
 }

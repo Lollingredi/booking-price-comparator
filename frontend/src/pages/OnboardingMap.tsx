@@ -7,7 +7,7 @@ import MarkerClusterGroup from "@changey/react-leaflet-markercluster";
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
-import { ITALY_HOTELS, distanceKm, getCompetitorsWithin20km } from "../demo/italyHotels";
+import { ITALY_HOTELS, distanceKm, getCompetitorsWithin20km, COMPETITOR_RADIUS_KM } from "../demo/italyHotels";
 import type { ItalyHotel } from "../demo/italyHotels";
 import { hotelsApi } from "../api/hotels";
 import { ratesApi } from "../api/rates";
@@ -404,7 +404,7 @@ export default function OnboardingMap() {
             {selected && (
               <Circle
                 center={[selected.lat, selected.lng]}
-                radius={20000}
+                radius={COMPETITOR_RADIUS_KM * 1000}
                 pathOptions={{ color: "#0D9488", fillColor: "#0D9488", fillOpacity: 0.05, weight: 1.5, dashArray: "6 4" }}
               />
             )}
@@ -518,7 +518,7 @@ export default function OnboardingMap() {
                 <div className="shrink-0">
                   <div className="flex items-center justify-between mb-2">
                     <h3 className="text-sm font-semibold text-gray-700 dark:text-slate-200">
-                      Competitor entro 20 km
+                      Competitor entro {COMPETITOR_RADIUS_KM} km
                       <span className="ml-2 bg-amber-100 text-amber-700 text-xs font-bold px-2 py-0.5 rounded-full">
                         {allCompetitors.length}
                       </span>
@@ -531,7 +531,7 @@ export default function OnboardingMap() {
                   </div>
 
                   {allCompetitors.length === 0 ? (
-                    <p className="text-xs text-gray-400 italic">Nessun competitor nel raggio di 20 km.</p>
+                    <p className="text-xs text-gray-400 italic">Nessun competitor nel raggio di {COMPETITOR_RADIUS_KM} km.</p>
                   ) : (
                     <>
                       <ul className="space-y-1.5 max-h-[320px] overflow-y-auto pr-0.5">
@@ -577,7 +577,7 @@ export default function OnboardingMap() {
               {/* ── CTA sticky ── */}
               <div className="shrink-0 px-4 pt-3 pb-4 border-t border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-800">
                 {saveError && (
-                  <p className="text-xs text-red-500 mb-2 text-center">{saveError}</p>
+                  <p className="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg px-3 py-2 mb-2">{saveError}</p>
                 )}
                 <button
                   onClick={handleStart}

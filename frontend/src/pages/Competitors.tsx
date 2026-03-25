@@ -27,6 +27,9 @@ export default function Competitors() {
 
   const [editingCompId, setEditingCompId] = useState<string | null>(null);
   const [editingSlug, setEditingSlug] = useState("");
+  const [removingId, setRemovingId] = useState<string | null>(null);
+  const [addingSuggestionKey, setAddingSuggestionKey] = useState<string | null>(null);
+  const [savedSlugId, setSavedSlugId] = useState<string | null>(null);
 
   const [suggestions, setSuggestions] = useState<HotelSearchResult[]>([]);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
@@ -187,6 +190,8 @@ export default function Competitors() {
             }
           : prev
       );
+      setSavedSlugId(comp.id);
+      setTimeout(() => setSavedSlugId(null), 2000);
     } catch {
       setError("Errore nel salvataggio dello slug.");
     } finally {
@@ -195,7 +200,8 @@ export default function Competitors() {
   };
 
   const handleAddSuggestion = async (s: HotelSearchResult) => {
-    if (!hotel) return;
+    if (!hotel || addingSuggestionKey) return;
+    setAddingSuggestionKey(s.hotel_key);
     try {
       const { data: comp } = await hotelsApi.addCompetitor({
         competitor_name: s.name,
@@ -205,17 +211,29 @@ export default function Competitors() {
       setSuggestions((prev) => prev.filter((x) => x.hotel_key !== s.hotel_key));
     } catch {
       setError("Errore nell'aggiunta del competitor.");
+    } finally {
+      setAddingSuggestionKey(null);
     }
   };
 
   const handleRemoveCompetitor = async (comp: Competitor) => {
+    if (removingId) return;
+    if (!window.confirm(`Rimuovere "${comp.competitor_name}" dai competitor monitorati?`)) return;
     if (isDemoMode) {
       setHotel((prev) =>
         prev ? { ...prev, competitors: prev.competitors.filter((c) => c.id !== comp.id) } : prev
       );
       return;
     }
-    await hotelsApi.removeCompetitor(comp.id);
+    setRemovingId(comp.id);
+    try {
+      await hotelsApi.removeCompetitor(comp.id);
+    } catch {
+      setError("Errore nella rimozione del competitor.");
+      setRemovingId(null);
+      return;
+    }
+    setRemovingId(null);
     setHotel((prev) =>
       prev ? { ...prev, competitors: prev.competitors.filter((c) => c.id !== comp.id) } : prev
     );
@@ -391,9 +409,10 @@ export default function Competitors() {
                 </div>
                 <button
                   onClick={() => handleAddSuggestion(s)}
-                  className="shrink-0 text-xs font-medium text-teal-600 dark:text-teal-400 border border-teal-200 dark:border-teal-700 hover:bg-teal-50 dark:hover:bg-teal-900/20 px-3 py-1 rounded-lg transition-colors"
+                  disabled={addingSuggestionKey === s.hotel_key}
+                  className="shrink-0 text-xs font-medium text-teal-600 dark:text-teal-400 border border-teal-200 dark:border-teal-700 hover:bg-teal-50 dark:hover:bg-teal-900/20 px-3 py-1 rounded-lg transition-colors disabled:opacity-50"
                 >
-                  + Aggiungi
+                  {addingSuggestionKey === s.hotel_key ? "..." : "+ Aggiungi"}
                 </button>
               </li>
             ))}
@@ -438,26 +457,38 @@ export default function Competitors() {
                         </button>
                       </div>
                     ) : (
-                      <button
-                        onClick={() => { setEditingCompId(comp.id); setEditingSlug(comp.competitor_booking_key); }}
-                        className="text-xs font-mono text-gray-400 dark:text-slate-500 hover:text-teal-600 dark:hover:text-teal-400 hover:underline text-left"
-                        title="Clicca per modificare lo slug"
-                      >
-                        {comp.competitor_booking_key || <span className="italic">slug non impostato</span>}
-                      </button>
+                      <span className="flex items-center gap-1.5">
+                        <button
+                          onClick={() => { setEditingCompId(comp.id); setEditingSlug(comp.competitor_booking_key); }}
+                          className="text-xs font-mono text-gray-400 dark:text-slate-500 hover:text-teal-600 dark:hover:text-teal-400 hover:underline text-left"
+                          title="Clicca per modificare lo slug"
+                        >
+                          {comp.competitor_booking_key || <span className="italic">slug non impostato</span>}
+                        </button>
+                        {savedSlugId === comp.id && (
+                          <span className="text-xs text-teal-600 dark:text-teal-400 font-medium">✓ Salvato</span>
+                        )}
+                      </span>
                     )}
                   </div>
                   <button
                     onClick={() => handleRemoveCompetitor(comp)}
-                    className="text-xs text-red-500 hover:text-red-700 dark:hover:text-red-400 px-2 py-1 shrink-0"
+                    disabled={removingId === comp.id}
+                    className="text-xs text-red-500 hover:text-red-700 dark:hover:text-red-400 px-2 py-1 shrink-0 disabled:opacity-50"
                   >
-                    Rimuovi
+                    {removingId === comp.id ? "..." : "Rimuovi"}
                   </button>
                 </li>
               ))}
             </ul>
           ) : (
-            <p className="text-sm text-gray-400 dark:text-slate-500">Nessun competitor aggiunto.</p>
+            <div className="flex flex-col items-center gap-2 py-4">
+              <svg className="w-7 h-7 text-gray-300 dark:text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
+              </svg>
+              <p className="text-sm font-medium text-gray-500 dark:text-slate-400">Nessun competitor aggiunto</p>
+              <p className="text-xs text-gray-400 dark:text-slate-500">Usa il form qui sotto per aggiungere i tuoi competitor.</p>
+            </div>
           )}
 
           <form onSubmit={handleAddCompetitor} className="border-t border-gray-100 dark:border-slate-700 pt-4 space-y-3">
@@ -498,7 +529,7 @@ export default function Competitors() {
             <button
               type="submit"
               disabled={addingComp}
-              className="bg-gray-800 dark:bg-slate-600 hover:bg-gray-900 dark:hover:bg-slate-500 text-white font-medium px-4 py-1.5 rounded-lg text-sm transition-colors disabled:opacity-60"
+              className="bg-teal-600 hover:bg-teal-700 text-white font-medium px-4 py-1.5 rounded-lg text-sm transition-colors disabled:opacity-60"
             >
               {addingComp ? "Aggiunta..." : "Aggiungi"}
             </button>

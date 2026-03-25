@@ -60,6 +60,8 @@ export default function ThemeToggle() {
       <button
         onClick={() => setOpen((o) => !o)}
         title="Cambia tema"
+        aria-label="Cambia tema"
+        aria-expanded={open}
         className="p-2 rounded-lg text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
       >
         <CurrentIcon />
@@ -71,6 +73,8 @@ export default function ThemeToggle() {
             <button
               key={value}
               onClick={() => { setTheme(value); setOpen(false); }}
+              aria-label={`Tema ${label}`}
+              aria-pressed={theme === value}
               className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-sm transition-colors ${
                 theme === value
                   ? "bg-teal-50 dark:bg-teal-900/30 text-teal-700 dark:text-teal-400 font-medium"

@@ -36,6 +36,10 @@ export default function Register() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    if (password.length < 8) {
+      setError("La password deve contenere almeno 8 caratteri.");
+      return;
+    }
     setIsLoading(true);
     try {
       await register(email, password, fullName);
@@ -48,53 +52,54 @@ export default function Register() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 px-4">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 dark:bg-slate-900 px-4">
       <h1 className="text-3xl font-bold text-teal-600 text-center mb-2">RateScope</h1>
-      <p className="text-center text-gray-500 text-sm mb-4">
+      <p className="text-center text-gray-500 dark:text-slate-400 text-sm mb-4">
         Crea il tuo account gratuito
       </p>
       <RenderBanner />
       <div className="w-full max-w-sm">
         <form
           onSubmit={handleSubmit}
-          className="bg-white rounded-[14px] border border-gray-200 p-6 space-y-4"
+          className="bg-white dark:bg-slate-800 rounded-[14px] border border-gray-200 dark:border-slate-700 p-6 space-y-4"
         >
-          <h2 className="text-lg font-semibold text-gray-800">Registrati</h2>
+          <h2 className="text-lg font-semibold text-gray-800 dark:text-slate-100">Registrati</h2>
           {error && (
-            <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+            <p className="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg px-3 py-2">
               {error}
             </p>
           )}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Nome completo</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Nome completo</label>
             <input
               type="text"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
               required
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"
+              className="w-full border border-gray-200 dark:border-slate-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-400"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Email</label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"
+              className="w-full border border-gray-200 dark:border-slate-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-400"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Password</label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
               minLength={8}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"
+              className="w-full border border-gray-200 dark:border-slate-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-400"
             />
+            <p className="text-xs text-gray-400 dark:text-slate-500 mt-1">Minimo 8 caratteri</p>
           </div>
           <button
             type="submit"
@@ -103,7 +108,7 @@ export default function Register() {
           >
             {isLoading ? "Registrazione in corso… (30–60s)" : "Crea account"}
           </button>
-          <p className="text-center text-sm text-gray-500">
+          <p className="text-center text-sm text-gray-500 dark:text-slate-400">
             Hai gia' un account?{" "}
             <Link to="/login" className="text-teal-600 hover:underline">
               Accedi
