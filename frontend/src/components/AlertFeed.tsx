@@ -20,8 +20,12 @@ interface AlertFeedProps {
 
 export default function AlertFeed({ logs, onRead }: AlertFeedProps) {
   const handleRead = async (id: string) => {
-    await alertsApi.markRead(id);
-    onRead(id);
+    try {
+      await alertsApi.markRead(id);
+      onRead(id);
+    } catch {
+      // silenzioso: se l'API fallisce, lo stato non viene aggiornato
+    }
   };
 
   if (logs.length === 0) {

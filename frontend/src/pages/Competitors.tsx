@@ -27,6 +27,8 @@ export default function Competitors() {
 
   const [editingCompId, setEditingCompId] = useState<string | null>(null);
   const [editingSlug, setEditingSlug] = useState("");
+  const [removingId, setRemovingId] = useState<string | null>(null);
+  const [addingSuggestionKey, setAddingSuggestionKey] = useState<string | null>(null);
 
   const [suggestions, setSuggestions] = useState<HotelSearchResult[]>([]);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
@@ -195,7 +197,8 @@ export default function Competitors() {
   };
 
   const handleAddSuggestion = async (s: HotelSearchResult) => {
-    if (!hotel) return;
+    if (!hotel || addingSuggestionKey) return;
+    setAddingSuggestionKey(s.hotel_key);
     try {
       const { data: comp } = await hotelsApi.addCompetitor({
         competitor_name: s.name,
@@ -205,17 +208,28 @@ export default function Competitors() {
       setSuggestions((prev) => prev.filter((x) => x.hotel_key !== s.hotel_key));
     } catch {
       setError("Errore nell'aggiunta del competitor.");
+    } finally {
+      setAddingSuggestionKey(null);
     }
   };
 
   const handleRemoveCompetitor = async (comp: Competitor) => {
+    if (removingId) return;
     if (isDemoMode) {
       setHotel((prev) =>
         prev ? { ...prev, competitors: prev.competitors.filter((c) => c.id !== comp.id) } : prev
       );
       return;
     }
-    await hotelsApi.removeCompetitor(comp.id);
+    setRemovingId(comp.id);
+    try {
+      await hotelsApi.removeCompetitor(comp.id);
+    } catch {
+      setError("Errore nella rimozione del competitor.");
+      setRemovingId(null);
+      return;
+    }
+    setRemovingId(null);
     setHotel((prev) =>
       prev ? { ...prev, competitors: prev.competitors.filter((c) => c.id !== comp.id) } : prev
     );
@@ -391,9 +405,10 @@ export default function Competitors() {
                 </div>
                 <button
                   onClick={() => handleAddSuggestion(s)}
-                  className="shrink-0 text-xs font-medium text-teal-600 dark:text-teal-400 border border-teal-200 dark:border-teal-700 hover:bg-teal-50 dark:hover:bg-teal-900/20 px-3 py-1 rounded-lg transition-colors"
+                  disabled={addingSuggestionKey === s.hotel_key}
+                  className="shrink-0 text-xs font-medium text-teal-600 dark:text-teal-400 border border-teal-200 dark:border-teal-700 hover:bg-teal-50 dark:hover:bg-teal-900/20 px-3 py-1 rounded-lg transition-colors disabled:opacity-50"
                 >
-                  + Aggiungi
+                  {addingSuggestionKey === s.hotel_key ? "..." : "+ Aggiungi"}
                 </button>
               </li>
             ))}
@@ -449,9 +464,10 @@ export default function Competitors() {
                   </div>
                   <button
                     onClick={() => handleRemoveCompetitor(comp)}
-                    className="text-xs text-red-500 hover:text-red-700 dark:hover:text-red-400 px-2 py-1 shrink-0"
+                    disabled={removingId === comp.id}
+                    className="text-xs text-red-500 hover:text-red-700 dark:hover:text-red-400 px-2 py-1 shrink-0 disabled:opacity-50"
                   >
-                    Rimuovi
+                    {removingId === comp.id ? "..." : "Rimuovi"}
                   </button>
                 </li>
               ))}
