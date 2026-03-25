@@ -1,6 +1,6 @@
 import logging
 import os
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 
 import httpx
@@ -199,7 +199,7 @@ async def get_history(
     hotel_key: str = Query(...),
     days: int = Query(default=30, ge=1, le=365),
 ):
-    since = datetime.utcnow() - timedelta(days=days)
+    since = datetime.now(timezone.utc) - timedelta(days=days)
     fetched_day = func.date(RateSnapshot.fetched_at).label("fetched_day")
 
     result = await db.execute(
@@ -314,26 +314,29 @@ async def get_comparison(
         (c.competitor_booking_key, c.competitor_name, False) for c in competitors
     ]
 
-    all_ota_codes: set[str] = set()
-    hotel_rate_maps: dict[str, dict[str, Decimal]] = {}
+    all_keys = [key for key, _name, _is_own in all_hotels if key]
 
-    for key, name, is_own in all_hotels:
+    # Single batch query instead of one query per hotel (N+1 → 1)
+    all_ota_codes: set[str] = set()
+    hotel_rate_maps: dict[str, dict[str, Decimal]] = {key: {} for key in all_keys}
+
+    if all_keys:
         snaps_result = await db.execute(
             select(RateSnapshot)
             .where(
-                RateSnapshot.hotel_booking_key == key,
+                RateSnapshot.hotel_booking_key.in_(all_keys),
                 RateSnapshot.check_in_date == check_in,
                 RateSnapshot.check_out_date == check_out,
             )
             .order_by(RateSnapshot.fetched_at.desc())
         )
-        snaps = snaps_result.scalars().all()
-        rate_map: dict[str, Decimal] = {}
-        for s in snaps:
-            if s.ota_code not in rate_map:
-                rate_map[s.ota_code] = s.price
-            all_ota_codes.add(s.ota_code)
-        hotel_rate_maps[key] = rate_map
+        seen: set[tuple[str, str]] = set()
+        for s in snaps_result.scalars().all():
+            pair = (s.hotel_booking_key, s.ota_code)
+            if pair not in seen:
+                seen.add(pair)
+                hotel_rate_maps[s.hotel_booking_key][s.ota_code] = s.price
+                all_ota_codes.add(s.ota_code)
 
     rows: list[ComparisonRow] = []
     for key, name, is_own in all_hotels:

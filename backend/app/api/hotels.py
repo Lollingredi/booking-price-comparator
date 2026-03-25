@@ -2,6 +2,7 @@ import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 
 from app.api.deps import CurrentUser, DB
 from app.core.rate_limit import rate_limit
@@ -39,7 +40,19 @@ async def create_or_update_hotel(payload: HotelCreate, current_user: CurrentUser
         )
         db.add(hotel)
 
-    await db.flush()
+    try:
+        await db.flush()
+    except IntegrityError:
+        await db.rollback()
+        # Concurrent request already created the hotel — fetch and update it
+        result = await db.execute(select(Hotel).where(Hotel.user_id == current_user.id))
+        hotel = result.scalar_one()
+        hotel.name = payload.name
+        hotel.booking_key = payload.booking_key
+        hotel.city = payload.city
+        hotel.stars = payload.stars
+        await db.flush()
+
     await db.refresh(hotel, ["competitors"])
     return hotel
 

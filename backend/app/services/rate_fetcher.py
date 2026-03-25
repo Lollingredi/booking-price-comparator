@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from collections import defaultdict
 from datetime import date, datetime, timezone
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -114,6 +115,14 @@ async def fetch_all_hotels_rates(db: AsyncSession, check_in: date, check_out: da
 
     logger.info("fetch_all_hotels_rates: trovati %d hotel nel DB", len(hotels))
 
+    # Load all active competitors in a single query to avoid N+1
+    comps_result = await db.execute(
+        select(HotelCompetitor).where(HotelCompetitor.is_active == True)
+    )
+    comp_map: dict = defaultdict(list)
+    for comp in comps_result.scalars().all():
+        comp_map[comp.hotel_id].append(comp)
+
     all_keys: set[str] = set()
     for hotel in hotels:
         key_val = repr(hotel.booking_key)
@@ -125,13 +134,7 @@ async def fetch_all_hotels_rates(db: AsyncSession, check_in: date, check_out: da
                 "  hotel '%s' → booking_key=%s (VUOTO — vai su Impostazioni e imposta il Booking.com Slug)",
                 hotel.name, key_val,
             )
-        comps_result = await db.execute(
-            select(HotelCompetitor).where(
-                HotelCompetitor.hotel_id == hotel.id,
-                HotelCompetitor.is_active == True,
-            )
-        )
-        for comp in comps_result.scalars().all():
+        for comp in comp_map.get(hotel.id, []):
             comp_key_val = repr(comp.competitor_booking_key)
             if comp.competitor_booking_key and comp.competitor_booking_key.strip():
                 all_keys.add(comp.competitor_booking_key)

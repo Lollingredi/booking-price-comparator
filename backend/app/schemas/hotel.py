@@ -1,7 +1,18 @@
+import re
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
+
+
+# Only allow slug chars: letters, digits, hyphens, dots (no ../, ?, #, etc.)
+_BOOKING_KEY_RE = re.compile(r'^[a-zA-Z0-9\-\.]{0,200}$')
+
+
+def _validate_key(v: str) -> str:
+    if v and not _BOOKING_KEY_RE.match(v):
+        raise ValueError("Può contenere solo lettere, numeri, trattini e punti.")
+    return v
 
 
 class HotelCreate(BaseModel):
@@ -9,6 +20,11 @@ class HotelCreate(BaseModel):
     booking_key: str = ""
     city: str
     stars: int | None = None
+
+    @field_validator("booking_key")
+    @classmethod
+    def validate_booking_key(cls, v: str) -> str:
+        return _validate_key(v)
 
 
 class HotelOut(BaseModel):
@@ -29,11 +45,23 @@ class CompetitorCreate(BaseModel):
     competitor_booking_key: str = ""
     competitor_stars: int | None = None
 
+    @field_validator("competitor_booking_key")
+    @classmethod
+    def validate_competitor_booking_key(cls, v: str) -> str:
+        return _validate_key(v)
+
 
 class CompetitorPatch(BaseModel):
     competitor_booking_key: str | None = None
     competitor_name: str | None = None
     competitor_stars: int | None = None
+
+    @field_validator("competitor_booking_key")
+    @classmethod
+    def validate_competitor_booking_key(cls, v: str | None) -> str | None:
+        if v is not None:
+            _validate_key(v)
+        return v
 
 
 class CompetitorOut(BaseModel):

@@ -30,6 +30,7 @@ import logging
 import random
 import re
 import sys
+import threading
 from pathlib import Path
 from typing import Callable, TypeVar
 
@@ -77,6 +78,7 @@ _PRICE_SELECTORS = [
 
 # Cookie storage path (one file per process, reused across requests)
 _COOKIE_FILE = Path(__file__).parent / ".booking_cookies.json"
+_COOKIE_LOCK = threading.Lock()
 
 
 # ── Thread-isolation helper ───────────────────────────────────────────────────
@@ -110,19 +112,21 @@ def _jitter(lo: float = 0.8, hi: float = 2.5) -> float:
 
 
 def _load_cookies() -> list[dict]:
-    if _COOKIE_FILE.exists():
-        try:
-            return json.loads(_COOKIE_FILE.read_text())
-        except Exception:
-            pass
+    with _COOKIE_LOCK:
+        if _COOKIE_FILE.exists():
+            try:
+                return json.loads(_COOKIE_FILE.read_text())
+            except Exception:
+                pass
     return []
 
 
 def _save_cookies(cookies: list[dict]) -> None:
-    try:
-        _COOKIE_FILE.write_text(json.dumps(cookies, indent=2))
-    except Exception:
-        pass
+    with _COOKIE_LOCK:
+        try:
+            _COOKIE_FILE.write_text(json.dumps(cookies, indent=2))
+        except Exception:
+            pass
 
 
 async def _apply_stealth(page: Page) -> None:
