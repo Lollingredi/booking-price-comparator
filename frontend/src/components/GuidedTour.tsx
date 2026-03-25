@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 const TOUR_KEY = "ratescope_tour_v1";
 
@@ -42,12 +42,39 @@ interface GuidedTourProps {
 export default function GuidedTour({ onClose }: GuidedTourProps) {
   const [step, setStep] = useState(0);
   const [visible, setVisible] = useState(false);
+  const dialogRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     // small delay so the dashboard has rendered first
     const t = setTimeout(() => setVisible(true), 600);
     return () => clearTimeout(t);
   }, []);
+
+  // Focus trap: sposta il focus dentro il dialog e blocca Tab all'interno
+  useEffect(() => {
+    if (!visible) return;
+    const el = dialogRef.current;
+    if (!el) return;
+    const focusable = el.querySelectorAll<HTMLElement>(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    );
+    if (focusable.length) focusable[focusable.length - 1].focus();
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") { dismiss(); return; }
+      if (e.key !== "Tab") return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (e.shiftKey) {
+        if (document.activeElement === first) { e.preventDefault(); last.focus(); }
+      } else {
+        if (document.activeElement === last) { e.preventDefault(); first.focus(); }
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visible, step]);
 
   const dismiss = () => {
     localStorage.setItem(TOUR_KEY, "done");
@@ -71,8 +98,14 @@ export default function GuidedTour({ onClose }: GuidedTourProps) {
   const isLast = step === steps.length - 1;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
-      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-md border border-gray-200 dark:border-slate-700 overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4" role="presentation">
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="tour-title"
+        className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-md border border-gray-200 dark:border-slate-700 overflow-hidden"
+      >
         {/* Progress bar */}
         <div className="h-1 bg-gray-100 dark:bg-slate-700">
           <div
@@ -89,7 +122,7 @@ export default function GuidedTour({ onClose }: GuidedTourProps) {
               <p className="text-xs font-medium text-teal-600 dark:text-teal-400 uppercase tracking-wide mb-1">
                 Passo {step + 1} di {steps.length}
               </p>
-              <h2 className="text-lg font-bold text-gray-900 dark:text-slate-100">{current.title}</h2>
+              <h2 id="tour-title" className="text-lg font-bold text-gray-900 dark:text-slate-100">{current.title}</h2>
             </div>
           </div>
 

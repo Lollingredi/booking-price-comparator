@@ -138,7 +138,7 @@ export default function Settings() {
       <Section title="Profilo">
         <form onSubmit={handleSaveProfile} className="space-y-4">
           {profileMsg && (
-            <p className={`text-sm px-3 py-2 rounded-lg border ${profileMsg.ok ? "bg-teal-50 dark:bg-teal-900/20 text-teal-800 dark:text-teal-300 border-teal-200 dark:border-teal-800" : "bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 border-red-200 dark:border-red-800"}`}>
+            <p className={`text-sm px-3 py-2 rounded-lg border ${profileMsg.ok ? "bg-teal-50 dark:bg-teal-900/20 text-teal-800 dark:text-teal-300 border-teal-200 dark:border-teal-800" : "bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800"}`}>
               {profileMsg.text}
             </p>
           )}
@@ -189,7 +189,7 @@ export default function Settings() {
       <Section title="Cambia password">
         <form onSubmit={handleSavePassword} className="space-y-4">
           {pwMsg && (
-            <p className={`text-sm px-3 py-2 rounded-lg border ${pwMsg.ok ? "bg-teal-50 dark:bg-teal-900/20 text-teal-800 dark:text-teal-300 border-teal-200 dark:border-teal-800" : "bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 border-red-200 dark:border-red-800"}`}>
+            <p className={`text-sm px-3 py-2 rounded-lg border ${pwMsg.ok ? "bg-teal-50 dark:bg-teal-900/20 text-teal-800 dark:text-teal-300 border-teal-200 dark:border-teal-800" : "bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800"}`}>
               {pwMsg.text}
             </p>
           )}

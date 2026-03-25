@@ -146,7 +146,7 @@ export default function Alerts() {
         <form onSubmit={handleCreate} className="border-t border-gray-100 dark:border-slate-700 pt-4 space-y-3">
           <h3 className="text-sm font-semibold text-gray-700 dark:text-slate-300">Nuova regola</h3>
           {error && (
-            <p className="text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded px-2 py-1">{error}</p>
+            <p className="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg px-3 py-2">{error}</p>
           )}
           <div className="grid grid-cols-2 gap-3">
             <div>
