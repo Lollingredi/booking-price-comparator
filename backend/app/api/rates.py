@@ -71,7 +71,7 @@ async def fetch_now(
             raise HTTPException(
                 status_code=503,
                 detail=(
-                    f"Impossibile avviare il workflow GitHub Actions: {err} "
+                    f"Impossibile avviare il workflow GitHub Actions: {err[:200]} "
                     "Vai su github.com → Actions → 'Scrape Hotel Rates' → Run workflow."
                 ),
             )

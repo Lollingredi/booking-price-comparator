@@ -8,13 +8,14 @@ from sqlalchemy import select
 
 from app.models import Hotel, HotelCompetitor, RateSnapshot
 from app.config import settings
+from app.services.providers import RateProvider
 
 logger = logging.getLogger(__name__)
 
 RATE_FRESHNESS_SECONDS = 3600  # 1 hour
 
 
-def _get_provider():
+def _get_provider() -> "RateProvider | None":
     """Return the active rate provider, or None if Playwright is not installed."""
     try:
         from app.services.booking_scraper import booking_provider

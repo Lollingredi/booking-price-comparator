@@ -35,6 +35,7 @@ from pathlib import Path
 from typing import Callable, TypeVar
 
 from playwright.async_api import (
+    AsyncPlaywright,
     BrowserContext,
     Page,
     async_playwright,
@@ -80,10 +81,14 @@ _PRICE_SELECTORS = [
 _COOKIE_FILE = Path(__file__).parent / ".booking_cookies.json"
 _COOKIE_LOCK = threading.Lock()
 
+# Price sanity bounds: ignore values outside this range (€)
+_PRICE_MIN: float = 10.0
+_PRICE_MAX: float = 10_000.0
+
 
 # ── Thread-isolation helper ───────────────────────────────────────────────────
 
-def _run_in_own_loop(coro_factory: Callable[[], "asyncio.coroutine"]):  # type: ignore[type-arg]
+def _run_in_own_loop(coro_factory: Callable[[], "asyncio.coroutine"]) -> T:  # type: ignore[type-arg]
     """
     Run *coro_factory()* inside a brand-new event loop created on the calling
     thread.  On Windows we explicitly use ProactorEventLoop so that
@@ -149,7 +154,7 @@ async def _apply_stealth(page: Page) -> None:
     """)
 
 
-async def _new_context(pw, proxy: str | None) -> BrowserContext:
+async def _new_context(pw: AsyncPlaywright, proxy: str | None) -> BrowserContext:
     launch_opts: dict = {
         "headless": True,
         "args": [
@@ -214,14 +219,15 @@ async def _extract_prices_from_dom(page: Page) -> list[float]:
                 for n in nums:
                     try:
                         v = float(n)
-                        if 10 < v < 10000:
+                        if _PRICE_MIN < v < _PRICE_MAX:
                             prices.append(v)
                     except ValueError:
                         pass
             if prices:
                 logger.debug("Found %d prices via selector '%s'", len(prices), selector)
                 return prices
-        except Exception:
+        except Exception as exc:
+            logger.debug("_extract_prices_from_dom: selector %r failed: %s", selector, exc)
             continue
     return []
 
@@ -242,12 +248,12 @@ async def _extract_prices_via_intercept(page: Page, url: str) -> list[float]:
             found = [
                 float(m)
                 for m in re.findall(r'"(?:price|amount|gross_amount|value)"\s*:\s*([\d.]+)', body)
-                if 10 < float(m) < 10000
+                if _PRICE_MIN < float(m) < _PRICE_MAX
             ]
             if found:
                 prices.extend(found)
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.debug("_parse_response: failed to parse %s: %s", response.url[:80], exc)
 
     page.on("response", _handle_response)
     await page.goto(url, wait_until="domcontentloaded", timeout=30000)

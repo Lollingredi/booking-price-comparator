@@ -74,6 +74,7 @@ async def delete_rule(rule_id: uuid.UUID, current_user: CurrentUser, db: DB):
     if not rule:
         raise HTTPException(status_code=404, detail="Alert rule not found.")
     await db.delete(rule)
+    await db.flush()
 
 
 @router.get("/log", response_model=list[AlertLogOut])

@@ -1,6 +1,9 @@
+import logging
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, status
+
+logger = logging.getLogger(__name__)
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
@@ -131,6 +134,7 @@ async def remove_competitor(competitor_id: uuid.UUID, current_user: CurrentUser,
         raise HTTPException(status_code=404, detail="Competitor not found.")
 
     await db.delete(competitor)
+    await db.flush()
 
 
 @router.delete("/mine", status_code=status.HTTP_204_NO_CONTENT)
@@ -148,6 +152,7 @@ async def delete_my_hotel(current_user: CurrentUser, db: DB):
         await db.delete(comp)
 
     await db.delete(hotel)
+    await db.flush()
 
 
 @router.get("/suggestions", response_model=list[HotelSearchResult])
@@ -165,7 +170,8 @@ async def suggest_competitors(current_user: CurrentUser, db: DB):
 
     try:
         raw = await _get_rate_provider().search_hotel(hotel.city)
-    except Exception:
+    except Exception as exc:
+        logger.warning("suggest_competitors: search_hotel failed for city=%r: %s", hotel.city, exc)
         return []
 
     suggestions: list[HotelSearchResult] = []

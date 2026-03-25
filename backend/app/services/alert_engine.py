@@ -1,5 +1,6 @@
 import html
 import logging
+import uuid
 from datetime import date, datetime, timezone, timedelta
 from decimal import Decimal
 
@@ -31,11 +32,11 @@ async def _get_latest_rates(
 
 async def _create_alert_log(
     db: AsyncSession,
-    user_id,
+    user_id: uuid.UUID,
     rule: AlertRule,
     message: str,
     severity: str,
-):
+) -> None:
     log = AlertLog(
         user_id=user_id,
         alert_rule_id=rule.id,
@@ -48,10 +49,10 @@ async def _create_alert_log(
 
 async def evaluate_alerts_for_user(
     db: AsyncSession,
-    user_id,
+    user_id: uuid.UUID,
     hotel: Hotel,
     check_in: date,
-):
+) -> None:
     """Evaluate all active alert rules for a user and create AlertLog entries."""
     if not hotel.booking_key or not hotel.booking_key.strip():
         return
