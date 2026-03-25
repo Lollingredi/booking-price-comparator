@@ -2,17 +2,20 @@ import { addDays, format } from "date-fns";
 import { useState, useEffect } from "react";
 import AlertFeed from "../components/AlertFeed";
 import CalendarHeatmap from "../components/CalendarHeatmap";
+import CompetitorTrend from "../components/CompetitorTrend";
 import MetricCard from "../components/MetricCard";
 import PriceChart from "../components/PriceChart";
 import RateTable from "../components/RateTable";
+import SuggestionsPanel from "../components/SuggestionsPanel";
 import GuidedTour, { useShouldShowTour } from "../components/GuidedTour";
 import { useAuth } from "../contexts/AuthContext";
-import { useComparison, useHistoryAll, useCalendar } from "../hooks/useRates";
+import { useComparison, useHistoryAll, useCalendar, useSuggestions } from "../hooks/useRates";
 import { alertsApi } from "../api/alerts";
 import { hotelsApi } from "../api/hotels";
 import { ratesApi } from "../api/rates";
 import type { AlertLog, Hotel } from "../types";
 import { DEMO_ALERT_LOGS } from "../demo/demoData";
+import { exportComparisonCsv, exportCalendarCsv } from "../utils/exportCsv";
 
 export default function Dashboard() {
   const { user, isDemoMode } = useAuth();
@@ -29,7 +32,10 @@ export default function Dashboard() {
   const { data: comparison, isLoading: loadingComparison, refetch: refetchComparison } = useComparison(checkIn, checkOut);
   const ownHotel = comparison.find((r) => r.is_own_hotel);
   const { data: history, isLoading: loadingHistory, refetch: refetchHistory } = useHistoryAll(7);
+  const { data: historyTrend, isLoading: loadingTrend } = useHistoryAll(30);
   const { data: calendarData, isLoading: loadingCalendar } = useCalendar(30);
+  const { data: suggestions, isLoading: loadingSuggestions } = useSuggestions(14);
+  const [chartTab, setChartTab] = useState<"ota" | "competitor">("ota");
 
   const [fetching, setFetching] = useState(false);
   const [fetchMsg, setFetchMsg] = useState<{ ok: boolean; text: string } | null>(null);
@@ -173,25 +179,36 @@ export default function Dashboard() {
       <div>
         <div className="flex items-center justify-between mb-3 gap-3 flex-wrap">
           <h2 className="text-base font-semibold text-gray-800 dark:text-slate-200">Confronto prezzi OTA</h2>
-          {!isDemoMode && (
-            <button
-              onClick={handleFetchNow}
-              disabled={fetching}
-              className="inline-flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-lg border border-teal-300 dark:border-teal-700 text-teal-700 dark:text-teal-400 hover:bg-teal-50 dark:hover:bg-teal-900/20 disabled:opacity-50 transition-colors"
-            >
-              {fetching ? (
-                <>
-                  <svg className="animate-spin h-3.5 w-3.5" viewBox="0 0 24 24" fill="none">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
-                  </svg>
-                  Scraping...
-                </>
-              ) : (
-                "Aggiorna prezzi"
-              )}
-            </button>
-          )}
+          <div className="flex items-center gap-2">
+            {comparison.length > 0 && (
+              <button
+                onClick={() => exportComparisonCsv(comparison)}
+                className="inline-flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-lg border border-gray-300 dark:border-slate-600 text-gray-600 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                CSV
+              </button>
+            )}
+            {!isDemoMode && (
+              <button
+                onClick={handleFetchNow}
+                disabled={fetching}
+                className="inline-flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-lg border border-teal-300 dark:border-teal-700 text-teal-700 dark:text-teal-400 hover:bg-teal-50 dark:hover:bg-teal-900/20 disabled:opacity-50 transition-colors"
+              >
+                {fetching ? (
+                  <>
+                    <svg className="animate-spin h-3.5 w-3.5" viewBox="0 0 24 24" fill="none">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+                    </svg>
+                    Scraping...
+                  </>
+                ) : (
+                  "Aggiorna prezzi"
+                )}
+              </button>
+            )}
+          </div>
         </div>
         {fetchMsg && (
           <div className={`mb-3 px-3 py-2 rounded-lg text-sm flex items-start justify-between gap-3 ${fetchMsg.ok ? "bg-teal-50 dark:bg-teal-900/20 text-teal-800 dark:text-teal-300 border border-teal-200 dark:border-teal-800" : "bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-300 border border-red-200 dark:border-red-800"}`}>
@@ -228,26 +245,62 @@ export default function Dashboard() {
           <h2 className="text-base font-semibold text-gray-800 dark:text-slate-200">
             Calendario prezzi — prossimi 30 giorni
           </h2>
-          <span className="text-xs text-gray-400 dark:text-slate-500 bg-gray-50 dark:bg-slate-700/50 border border-gray-200 dark:border-slate-700 rounded-full px-3 py-1">
-            Colore = posizionamento vs competitor
-          </span>
+          <div className="flex items-center gap-2">
+            {calendarData.length > 0 && (
+              <button
+                onClick={() => exportCalendarCsv(calendarData)}
+                className="inline-flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-lg border border-gray-300 dark:border-slate-600 text-gray-600 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                CSV
+              </button>
+            )}
+            <span className="text-xs text-gray-400 dark:text-slate-500 bg-gray-50 dark:bg-slate-700/50 border border-gray-200 dark:border-slate-700 rounded-full px-3 py-1">
+              Colore = posizionamento vs competitor
+            </span>
+          </div>
         </div>
         <CalendarHeatmap data={calendarData} isLoading={loadingCalendar} />
+      </div>
+
+      {/* Revenue suggestions */}
+      <div>
+        <h2 className="text-base font-semibold text-gray-800 dark:text-slate-200 mb-3">
+          Suggerimenti Revenue — prossimi 14 giorni
+        </h2>
+        <div className="bg-white dark:bg-slate-800 rounded-[14px] border border-gray-200 dark:border-slate-700 p-4">
+          <SuggestionsPanel data={suggestions} isLoading={loadingSuggestions} />
+        </div>
       </div>
 
       {/* Chart + alerts side by side */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
           <div className="flex items-center justify-between mb-3 gap-3 flex-wrap">
-            <h2 className="text-base font-semibold text-gray-800 dark:text-slate-200">
-              Prezzi prossimi 7 giorni
-            </h2>
+            <div className="flex items-center gap-1 bg-gray-100 dark:bg-slate-700/60 rounded-lg p-0.5">
+              <button
+                onClick={() => setChartTab("ota")}
+                className={`text-xs font-medium px-3 py-1.5 rounded-md transition-colors ${chartTab === "ota" ? "bg-white dark:bg-slate-600 text-gray-900 dark:text-slate-100 shadow-sm" : "text-gray-500 dark:text-slate-400 hover:text-gray-700"}`}
+              >
+                Per OTA (7gg)
+              </button>
+              <button
+                onClick={() => setChartTab("competitor")}
+                className={`text-xs font-medium px-3 py-1.5 rounded-md transition-colors ${chartTab === "competitor" ? "bg-white dark:bg-slate-600 text-gray-900 dark:text-slate-100 shadow-sm" : "text-gray-500 dark:text-slate-400 hover:text-gray-700"}`}
+              >
+                Per Hotel (30gg)
+              </button>
+            </div>
             <span className="text-xs text-gray-400 dark:text-slate-500 bg-gray-50 dark:bg-slate-700/50 border border-gray-200 dark:border-slate-700 rounded-full px-3 py-1">
-              Prezzo minimo per data di check-in
+              {chartTab === "ota" ? "Prezzo minimo per data di check-in" : "Trend competitor — seleziona hotel"}
             </span>
           </div>
           <div className="bg-white dark:bg-slate-800 rounded-[14px] border border-gray-200 dark:border-slate-700 p-4">
-            <PriceChart data={history} isLoading={loadingHistory} />
+            {chartTab === "ota" ? (
+              <PriceChart data={history} isLoading={loadingHistory} />
+            ) : (
+              <CompetitorTrend data={historyTrend} isLoading={loadingTrend} />
+            )}
           </div>
         </div>
         <div>

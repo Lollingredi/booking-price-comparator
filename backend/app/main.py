@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
 from app.database import engine, Base
-from app.api import auth, hotels, rates, alerts
+from app.api import auth, hotels, rates, alerts, team
 
 logger = logging.getLogger(__name__)
 
@@ -52,6 +52,7 @@ app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
 app.include_router(hotels.router, prefix="/api/hotels", tags=["hotels"])
 app.include_router(rates.router, prefix="/api/rates", tags=["rates"])
 app.include_router(alerts.router, prefix="/api/alerts", tags=["alerts"])
+app.include_router(team.router, prefix="/api/team", tags=["team"])
 
 
 @app.get("/health")

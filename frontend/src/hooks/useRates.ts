@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ratesApi } from "../api/rates";
-import type { CalendarDay, ComparisonRow, HistoryPoint, HotelRates } from "../types";
+import type { CalendarDay, ComparisonRow, HistoryPoint, HotelRates, PriceSuggestion } from "../types";
 import { format, addDays } from "date-fns";
 import { useAuth } from "../contexts/AuthContext";
 import {
@@ -176,6 +176,62 @@ export function useCalendar(days = 30) {
       setIsLoading(false);
     }
   }, [days, isDemoMode, demoCalendar]);
+
+  useEffect(() => {
+    fetch();
+  }, [fetch]);
+
+  return { data, isLoading, error, refetch: fetch };
+}
+
+function generateDemoSuggestions(): PriceSuggestion[] {
+  const today = new Date();
+  const signals: Array<"lower" | "raise" | "ok"> = ["ok", "lower", "ok", "raise", "ok", "ok", "lower", "ok", "raise", "ok", "ok", "ok", "lower", "ok"];
+  return signals.map((signal, i) => {
+    const d = addDays(today, i + 1);
+    const own = 90 + Math.floor(Math.random() * 40);
+    const avg = signal === "lower" ? own * 0.82 : signal === "raise" ? own * 1.18 : own * 0.97;
+    const diff = ((own - avg) / avg) * 100;
+    return {
+      check_in: format(d, "yyyy-MM-dd"),
+      own_min: own,
+      market_avg: Math.round(avg),
+      market_min: Math.round(avg * 0.9),
+      market_max: Math.round(avg * 1.15),
+      diff_pct: Math.round(diff),
+      signal,
+      message: signal === "lower"
+        ? `Il tuo prezzo (€${own}) è ${Math.abs(Math.round(diff))}% sopra la media. Valuta una riduzione.`
+        : signal === "raise"
+        ? `Il tuo prezzo (€${own}) è ${Math.abs(Math.round(diff))}% sotto la media. Puoi aumentare.`
+        : `Il tuo prezzo (€${own}) è allineato alla media (€${Math.round(avg)}).`,
+    };
+  });
+}
+
+export function useSuggestions(days = 14) {
+  const { isDemoMode } = useAuth();
+  const demoSuggestions = useMemo(() => generateDemoSuggestions(), []);
+  const [data, setData] = useState<PriceSuggestion[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetch = useCallback(async () => {
+    if (isDemoMode) {
+      setData(demoSuggestions);
+      return;
+    }
+    setIsLoading(true);
+    setError(null);
+    try {
+      const { data: sug } = await ratesApi.getSuggestions(days);
+      setData(sug);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Errore nel caricamento suggerimenti");
+    } finally {
+      setIsLoading(false);
+    }
+  }, [days, isDemoMode, demoSuggestions]);
 
   useEffect(() => {
     fetch();

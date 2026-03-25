@@ -11,7 +11,7 @@ from sqlalchemy import func, select
 from app.api.deps import CurrentUser, DB
 from app.models.hotel import Hotel, HotelCompetitor
 from app.models.rate import RateSnapshot
-from app.schemas.rate import CalendarDay, ComparisonRow, HistoryPoint, HotelRates, RateSnapshotOut
+from app.schemas.rate import CalendarDay, ComparisonRow, HistoryPoint, HotelRates, PriceSuggestion, RateSnapshotOut
 from app.services.rate_fetcher import (
     SCRAPING_AVAILABLE,
     fetch_and_save_rates,
@@ -446,3 +446,103 @@ async def get_calendar(
         ))
 
     return calendar
+
+
+@router.get("/suggestions", response_model=list[PriceSuggestion])
+async def get_suggestions(
+    current_user: CurrentUser,
+    db: DB,
+    days: int = Query(default=14, ge=1, le=60),
+):
+    """Revenue management suggestions: compare your price to market average."""
+    result = await db.execute(select(Hotel).where(Hotel.user_id == current_user.id))
+    hotel = result.scalar_one_or_none()
+    if not hotel:
+        return []
+
+    comps_result = await db.execute(
+        select(HotelCompetitor).where(
+            HotelCompetitor.hotel_id == hotel.id,
+            HotelCompetitor.is_active == True,
+        )
+    )
+    competitors = comps_result.scalars().all()
+    own_key = hotel.booking_key
+    comp_keys = [c.competitor_booking_key for c in competitors if c.competitor_booking_key]
+    all_keys = ([own_key] if own_key else []) + comp_keys
+
+    if not all_keys:
+        return []
+
+    today = date.today()
+    from_date = today + timedelta(days=1)
+    to_date = today + timedelta(days=days)
+
+    snaps_result = await db.execute(
+        select(
+            RateSnapshot.hotel_booking_key,
+            RateSnapshot.check_in_date,
+            func.min(RateSnapshot.price).label("min_price"),
+        )
+        .where(
+            RateSnapshot.hotel_booking_key.in_(all_keys),
+            RateSnapshot.check_in_date >= from_date,
+            RateSnapshot.check_in_date <= to_date,
+        )
+        .group_by(RateSnapshot.hotel_booking_key, RateSnapshot.check_in_date)
+    )
+    # {check_in: {key: min_price}}
+    price_map: dict[date, dict[str, Decimal]] = {}
+    for row in snaps_result.all():
+        price_map.setdefault(row.check_in_date, {})[row.hotel_booking_key] = row.min_price
+
+    suggestions: list[PriceSuggestion] = []
+    for offset in range(1, days + 1):
+        d = today + timedelta(days=offset)
+        day_prices = price_map.get(d, {})
+        own_min = day_prices.get(own_key) if own_key else None
+        comp_prices = [day_prices[k] for k in comp_keys if k in day_prices]
+
+        if own_min is None or not comp_prices:
+            suggestions.append(PriceSuggestion(
+                check_in=d, own_min=own_min, signal="no_data",
+                message="Dati insufficienti per questo giorno.",
+            ))
+            continue
+
+        market_avg = sum(comp_prices) / len(comp_prices)
+        market_min = min(comp_prices)
+        market_max = max(comp_prices)
+        diff_pct = float(own_min - market_avg) / float(market_avg) * 100
+
+        if diff_pct > 10:
+            signal = "lower"
+            message = (
+                f"Il tuo prezzo (€{own_min:.0f}) è {diff_pct:.0f}% sopra la media di mercato "
+                f"(€{market_avg:.0f}). Valuta una riduzione per migliorare la competitività."
+            )
+        elif diff_pct < -10:
+            signal = "raise"
+            message = (
+                f"Il tuo prezzo (€{own_min:.0f}) è {abs(diff_pct):.0f}% sotto la media di mercato "
+                f"(€{market_avg:.0f}). Potresti aumentare il prezzo senza perdere posizionamento."
+            )
+        else:
+            signal = "ok"
+            message = (
+                f"Il tuo prezzo (€{own_min:.0f}) è allineato alla media di mercato "
+                f"(€{market_avg:.0f}). Posizionamento competitivo."
+            )
+
+        suggestions.append(PriceSuggestion(
+            check_in=d,
+            own_min=own_min,
+            market_avg=Decimal(str(round(float(market_avg), 2))),
+            market_min=market_min,
+            market_max=market_max,
+            diff_pct=round(diff_pct, 1),
+            signal=signal,
+            message=message,
+        ))
+
+    return suggestions
