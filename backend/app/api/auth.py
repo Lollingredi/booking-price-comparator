@@ -2,12 +2,13 @@ import uuid
 from datetime import datetime, timedelta, timezone
 
 import bcrypt
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from jose import JWTError, jwt
 from sqlalchemy import select
 
 from app.api.deps import CurrentUser, DB
 from app.config import settings
+from app.core.rate_limit import rate_limit
 from app.models.user import User
 from app.schemas.user import Token, TokenRefresh, UserCreate, UserLogin, UserOut, UserUpdate
 
@@ -41,7 +42,7 @@ def _make_tokens(user_id: uuid.UUID) -> Token:
 
 
 @router.post("/register", response_model=Token, status_code=status.HTTP_201_CREATED)
-async def register(payload: UserCreate, db: DB):
+async def register(payload: UserCreate, db: DB, _rl: None = Depends(rate_limit(3, 60))):
     existing = await db.execute(select(User).where(User.email == payload.email))
     if existing.scalar_one_or_none():
         raise HTTPException(status_code=400, detail="Email already registered")
@@ -58,7 +59,7 @@ async def register(payload: UserCreate, db: DB):
 
 
 @router.post("/login", response_model=Token)
-async def login(payload: UserLogin, db: DB):
+async def login(payload: UserLogin, db: DB, _rl: None = Depends(rate_limit(5, 60))):
     result = await db.execute(select(User).where(User.email == payload.email))
     user = result.scalar_one_or_none()
     if not user or not _verify_password(payload.password, user.hashed_password):
