@@ -399,6 +399,14 @@ class BookingProvider(RateProvider):
 def _make_provider() -> BookingProvider:
     import os
     proxy = os.getenv("SCRAPER_PROXY") or None
+    if proxy:
+        if not (proxy.startswith("http://") or proxy.startswith("https://") or proxy.startswith("socks5://")):
+            logger.error(
+                "SCRAPER_PROXY non valido: %r — deve iniziare con http://, https:// o socks5://. "
+                "Il proxy verrà ignorato.",
+                proxy,
+            )
+            proxy = None
     return BookingProvider(proxy=proxy)
 
 
