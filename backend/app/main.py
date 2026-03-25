@@ -1,3 +1,4 @@
+import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -7,9 +8,23 @@ from app.config import settings
 from app.database import engine, Base
 from app.api import auth, hotels, rates, alerts
 
+logger = logging.getLogger(__name__)
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Security checks on startup
+    if settings.SECRET_KEY == "change-me":
+        raise RuntimeError(
+            "SECRET_KEY è il valore di default 'change-me'. "
+            "Imposta SECRET_KEY come variabile d'ambiente sicura prima del deploy."
+        )
+    if "*" in settings.cors_origins_list:
+        logger.warning(
+            "CORS_ORIGINS='*': tutte le origini sono accettate. "
+            "Imposta CORS_ORIGINS con le origini consentite in produzione."
+        )
+
     # Startup: create tables if they don't exist (migrations handle prod)
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)

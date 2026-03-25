@@ -1,9 +1,10 @@
 import uuid
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 
 from app.api.deps import CurrentUser, DB
+from app.core.rate_limit import rate_limit
 from app.models.hotel import Hotel, HotelCompetitor
 from app.schemas.hotel import (
     CompetitorCreate,
@@ -169,7 +170,7 @@ async def suggest_competitors(current_user: CurrentUser, db: DB):
 
 
 @router.get("/search", response_model=list[HotelSearchResult])
-async def search_hotels(q: str, current_user: CurrentUser):
+async def search_hotels(q: str, current_user: CurrentUser, _rl: None = Depends(rate_limit(10, 60))):
     if not q or len(q) < 2:
         raise HTTPException(status_code=400, detail="Query must be at least 2 characters.")
     results = await _get_rate_provider().search_hotel(q)
