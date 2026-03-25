@@ -218,6 +218,7 @@ export default function Competitors() {
 
   const handleRemoveCompetitor = async (comp: Competitor) => {
     if (removingId) return;
+    if (!window.confirm(`Rimuovere "${comp.competitor_name}" dai competitor monitorati?`)) return;
     if (isDemoMode) {
       setHotel((prev) =>
         prev ? { ...prev, competitors: prev.competitors.filter((c) => c.id !== comp.id) } : prev
@@ -528,7 +529,7 @@ export default function Competitors() {
             <button
               type="submit"
               disabled={addingComp}
-              className="bg-gray-800 dark:bg-slate-600 hover:bg-gray-900 dark:hover:bg-slate-500 text-white font-medium px-4 py-1.5 rounded-lg text-sm transition-colors disabled:opacity-60"
+              className="bg-teal-600 hover:bg-teal-700 text-white font-medium px-4 py-1.5 rounded-lg text-sm transition-colors disabled:opacity-60"
             >
               {addingComp ? "Aggiunta..." : "Aggiungi"}
             </button>
