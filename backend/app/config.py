@@ -15,6 +15,9 @@ class Settings(BaseSettings):
     # Example: http://user:pass@host:port  or  socks5://user:pass@host:port
     SCRAPER_PROXY: str = ""
     CORS_ORIGINS: str = "*"
+    # Email notifications via SendGrid (set SENDGRID_API_KEY to enable)
+    SENDGRID_API_KEY: str = ""
+    FROM_EMAIL: str = "alerts@ratescope.app"
 
     @property
     def cors_origins_list(self) -> list[str]:

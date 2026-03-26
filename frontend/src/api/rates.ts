@@ -1,5 +1,5 @@
 import { apiClient } from "./client";
-import type { ComparisonRow, HistoryPoint, HotelRates } from "../types";
+import type { CalendarDay, ComparisonRow, HistoryPoint, HotelRates, PriceSuggestion } from "../types";
 
 export const ratesApi = {
   getCurrent: (check_in: string, check_out: string) =>
@@ -26,4 +26,10 @@ export const ratesApi = {
       null,
       { params: { check_in, check_out, days_ahead } }
     ),
+
+  getCalendar: (days = 30) =>
+    apiClient.get<CalendarDay[]>("/api/rates/calendar", { params: { days } }),
+
+  getSuggestions: (days = 14) =>
+    apiClient.get<PriceSuggestion[]>("/api/rates/suggestions", { params: { days } }),
 };

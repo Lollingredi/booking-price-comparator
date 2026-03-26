@@ -96,3 +96,22 @@ export interface Token {
   refresh_token: string;
   token_type: string;
 }
+
+export interface CalendarDay {
+  check_in: string;
+  own_min: number | null;
+  best_competitor: number | null;
+  rank: number | null;
+  total_hotels: number;
+}
+
+export interface PriceSuggestion {
+  check_in: string;
+  own_min: number | null;
+  market_avg: number | null;
+  market_min: number | null;
+  market_max: number | null;
+  diff_pct: number | null;
+  signal: "lower" | "raise" | "ok" | "no_data";
+  message: string;
+}
