@@ -34,12 +34,18 @@ import threading
 from pathlib import Path
 from typing import Callable, TypeVar
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from playwright.async_api import (
-    AsyncPlaywright,
     BrowserContext,
     Page,
     async_playwright,
 )
+
+if TYPE_CHECKING:
+    from playwright.async_api import AsyncPlaywright
 
 from app.services.providers import HotelSearchResult, RateProvider, RateResult
 
