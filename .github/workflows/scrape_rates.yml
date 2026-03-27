@@ -8,9 +8,9 @@ on:
   workflow_dispatch:
     inputs:
       days_ahead:
-        description: "Quante notti future scansionare (default: 7)"
+        description: "Quante notti future scansionare (default: 3)"
         required: false
-        default: "7"
+        default: "3"
 
 jobs:
   scrape:
@@ -88,7 +88,7 @@ jobs:
           SCRAPERAPI_KEY: ${{ secrets.SCRAPERAPI_KEY }}
           SENDGRID_API_KEY: ${{ secrets.SENDGRID_API_KEY }}
           SCRAPER_PROXY: ${{ secrets.SCRAPER_PROXY }}
-          SCRAPE_DAYS_AHEAD: ${{ github.event.inputs.days_ahead || '7' }}
+          SCRAPE_DAYS_AHEAD: ${{ github.event.inputs.days_ahead || '3' }}
         run: python backend/scripts/scrape_all.py
 
       - name: Upload debug HTML (se nessun prezzo trovato)
