@@ -16,41 +16,44 @@ RATE_FRESHNESS_SECONDS = 3600  # 1 hour
 
 
 def _get_provider() -> "RateProvider | None":
-    """Return the primary rate provider (Booking.com), or None if Playwright is not installed."""
-    try:
-        from app.services.booking_scraper import booking_provider
-        return booking_provider
-    except ImportError:
-        return None
+    """Return the primary rate provider. Xotelo API is always available; Playwright is optional."""
+    from app.services.xotelo_provider import xotelo_provider
+    return xotelo_provider
 
 
 def _get_all_providers() -> list[RateProvider]:
-    """Return all available rate providers (Booking + Expedia + Hotels.com)."""
-    providers: list[RateProvider] = []
-    try:
-        from app.services.booking_scraper import booking_provider
-        providers.append(booking_provider)
-    except ImportError:
-        pass
-    try:
-        import os
-        proxy = os.getenv("SCRAPER_PROXY") or None
-        from app.services.expedia_scraper import ExpediaProvider
-        providers.append(ExpediaProvider(proxy=proxy))
-    except ImportError:
-        pass
-    try:
-        import os
-        proxy = os.getenv("SCRAPER_PROXY") or None
-        from app.services.hotels_com_scraper import HotelsComProvider
-        providers.append(HotelsComProvider(proxy=proxy))
-    except ImportError:
-        pass
+    """
+    Return all available rate providers.
+    Xotelo is primary (no proxy needed — returns multi-OTA data in one call).
+    Playwright-based scrapers are kept as optional extras if installed.
+    """
+    from app.services.xotelo_provider import xotelo_provider
+    providers: list[RateProvider] = [xotelo_provider]
+
+    # Optional Playwright scrapers (only useful if SCRAPER_PROXY is set)
+    proxy = settings.SCRAPER_PROXY or None
+    if proxy:
+        try:
+            from app.services.booking_scraper import booking_provider
+            providers.append(booking_provider)
+        except Exception:
+            pass
+        try:
+            from app.services.expedia_scraper import ExpediaProvider
+            providers.append(ExpediaProvider(proxy=proxy))
+        except Exception:
+            pass
+        try:
+            from app.services.hotels_com_scraper import HotelsComProvider
+            providers.append(HotelsComProvider(proxy=proxy))
+        except Exception:
+            pass
+
     return providers
 
 
-# True only when Playwright is installed (i.e. in the GitHub Actions environment).
-SCRAPING_AVAILABLE: bool = _get_provider() is not None
+# Xotelo API is always available — no Playwright required.
+SCRAPING_AVAILABLE: bool = True
 
 
 async def is_data_fresh(db: AsyncSession, hotel_key: str, check_in: date, check_out: date) -> bool:
@@ -79,10 +82,7 @@ async def fetch_and_save_rates(
 ) -> list[RateSnapshot]:
     providers = _get_all_providers()
     if not providers:
-        raise RuntimeError(
-            "Playwright non è installato su questo server. "
-            "Lo scraping viene eseguito automaticamente da GitHub Actions ogni 6 ore."
-        )
+        raise RuntimeError("Nessun provider di tariffe disponibile.")
     fetched_at = datetime.now(timezone.utc)
 
     # Fetch from all available OTA providers
@@ -193,8 +193,8 @@ async def fetch_all_hotels_rates(db: AsyncSession, check_in: date, check_out: da
             if len(snaps) == 0:
                 logger.warning(
                     "fetch_all_hotels_rates: 0 prezzi per slug=%s (%s→%s) — "
-                    "Booking.com potrebbe bloccare le richieste da questo IP. "
-                    "Configura SCRAPER_PROXY nei GitHub Secrets.",
+                    "Xotelo non ha trovato disponibilità per queste date "
+                    "(hotel non su Booking.com o date non disponibili).",
                     key, check_in, check_out,
                 )
         except Exception as exc:
