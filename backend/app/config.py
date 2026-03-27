@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     # Email notifications via SendGrid (set SENDGRID_API_KEY to enable)
     SENDGRID_API_KEY: str = ""
     FROM_EMAIL: str = "alerts@ratescope.app"
+    SCRAPERAPI_KEY: str = ""
 
     @property
     def cors_origins_list(self) -> list[str]:

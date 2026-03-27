@@ -118,11 +118,10 @@ async def main() -> None:
     )
 
     if total_prices == 0 and total_processed > 0:
-        logger.error(
-            "ATTENZIONE: %d hotel processati ma 0 prezzi trovati! "
-            "Booking.com probabilmente blocca le richieste da GitHub Actions. "
-            "Soluzione: aggiungi SCRAPER_PROXY nei GitHub Secrets "
-            "(es. proxy residenziale Bright Data / Oxylabs).",
+        logger.warning(
+            "ATTENZIONE: %d hotel processati ma 0 prezzi trovati. "
+            "Possibili cause: slug Booking.com non corretto, hotel non indicizzato "
+            "su Xotelo, o date senza disponibilità.",
             total_processed,
         )
 
@@ -134,11 +133,8 @@ async def main() -> None:
 
     await engine.dispose()
 
-    if total_errors or (total_prices == 0 and total_processed > 0):
-        logger.warning(
-            "Scraping terminato con problemi — errori: %d, prezzi: %d",
-            total_errors, total_prices,
-        )
+    if total_errors:
+        logger.warning("Scraping terminato con errori: %d", total_errors)
         sys.exit(1)
 
 
