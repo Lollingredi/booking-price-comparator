@@ -16,21 +16,16 @@ RATE_FRESHNESS_SECONDS = 3600  # 1 hour
 
 
 def _get_provider() -> "RateProvider | None":
-    """Return the primary rate provider."""
+    """Return the primary rate provider (ScraperAPI), or None if key not set."""
     from app.services.scraper_api_provider import make_scraper_api_provider
-    p = make_scraper_api_provider()
-    if p:
-        return p
-    # Fallback: Xotelo (no API key needed but less reliable)
-    from app.services.xotelo_provider import xotelo_provider
-    return xotelo_provider
+    return make_scraper_api_provider()
 
 
 def _get_all_providers() -> list[RateProvider]:
     """
     Return all available rate providers.
-    Priority: ScraperAPI (if key set) → Xotelo (free fallback).
-    Playwright scrapers are kept only when SCRAPER_PROXY is explicitly set.
+    ScraperAPI is the only supported provider (uses Booking.com slugs).
+    Playwright is kept as an optional extra if SCRAPER_PROXY is configured.
     """
     providers: list[RateProvider] = []
 
@@ -40,9 +35,10 @@ def _get_all_providers() -> list[RateProvider]:
         providers.append(scraper_api)
         logger.info("Using ScraperAPI as primary provider")
     else:
-        from app.services.xotelo_provider import xotelo_provider
-        providers.append(xotelo_provider)
-        logger.info("SCRAPERAPI_KEY not set — falling back to Xotelo provider")
+        logger.error(
+            "SCRAPERAPI_KEY non impostata — nessun provider disponibile. "
+            "Aggiungi SCRAPERAPI_KEY nei GitHub Secrets per abilitare lo scraping."
+        )
 
     # Optional Playwright scrapers (only if proxy configured)
     proxy = settings.SCRAPER_PROXY or None
