@@ -16,7 +16,12 @@ RATE_FRESHNESS_SECONDS = 3600  # 1 hour
 
 
 def _get_provider() -> "RateProvider | None":
-    """Return the primary rate provider. Xotelo API is always available; Playwright is optional."""
+    """Return the primary rate provider."""
+    from app.services.scraper_api_provider import make_scraper_api_provider
+    p = make_scraper_api_provider()
+    if p:
+        return p
+    # Fallback: Xotelo (no API key needed but less reliable)
     from app.services.xotelo_provider import xotelo_provider
     return xotelo_provider
 
@@ -24,13 +29,22 @@ def _get_provider() -> "RateProvider | None":
 def _get_all_providers() -> list[RateProvider]:
     """
     Return all available rate providers.
-    Xotelo is primary (no proxy needed — returns multi-OTA data in one call).
-    Playwright-based scrapers are kept as optional extras if installed.
+    Priority: ScraperAPI (if key set) → Xotelo (free fallback).
+    Playwright scrapers are kept only when SCRAPER_PROXY is explicitly set.
     """
-    from app.services.xotelo_provider import xotelo_provider
-    providers: list[RateProvider] = [xotelo_provider]
+    providers: list[RateProvider] = []
 
-    # Optional Playwright scrapers (only useful if SCRAPER_PROXY is set)
+    from app.services.scraper_api_provider import make_scraper_api_provider
+    scraper_api = make_scraper_api_provider()
+    if scraper_api:
+        providers.append(scraper_api)
+        logger.info("Using ScraperAPI as primary provider")
+    else:
+        from app.services.xotelo_provider import xotelo_provider
+        providers.append(xotelo_provider)
+        logger.info("SCRAPERAPI_KEY not set — falling back to Xotelo provider")
+
+    # Optional Playwright scrapers (only if proxy configured)
     proxy = settings.SCRAPER_PROXY or None
     if proxy:
         try:
@@ -38,21 +52,11 @@ def _get_all_providers() -> list[RateProvider]:
             providers.append(booking_provider)
         except Exception:
             pass
-        try:
-            from app.services.expedia_scraper import ExpediaProvider
-            providers.append(ExpediaProvider(proxy=proxy))
-        except Exception:
-            pass
-        try:
-            from app.services.hotels_com_scraper import HotelsComProvider
-            providers.append(HotelsComProvider(proxy=proxy))
-        except Exception:
-            pass
 
     return providers
 
 
-# Xotelo API is always available — no Playwright required.
+# Always True — either ScraperAPI or Xotelo is available without extra deps.
 SCRAPING_AVAILABLE: bool = True
 
 
@@ -193,8 +197,8 @@ async def fetch_all_hotels_rates(db: AsyncSession, check_in: date, check_out: da
             if len(snaps) == 0:
                 logger.warning(
                     "fetch_all_hotels_rates: 0 prezzi per slug=%s (%s→%s) — "
-                    "Xotelo non ha trovato disponibilità per queste date "
-                    "(hotel non su Booking.com o date non disponibili).",
+                    "verifica che lo slug Booking.com sia corretto e che l'hotel "
+                    "abbia disponibilità per queste date.",
                     key, check_in, check_out,
                 )
         except Exception as exc:
