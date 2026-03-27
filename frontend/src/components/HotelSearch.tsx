@@ -57,6 +57,8 @@ export default function HotelSearch({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
+    // Always prevent Enter from bubbling to a parent <form> and submitting it
+    if (e.key === "Enter") e.preventDefault();
     if (!open || results.length === 0) return;
     if (e.key === "ArrowDown") {
       e.preventDefault();

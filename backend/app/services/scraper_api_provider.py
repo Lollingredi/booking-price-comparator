@@ -67,23 +67,32 @@ def _extract_prices_from_html(html: str) -> list[float]:
             logger.debug("Prices found via selector '%s': %s", selector, prices[:5])
             return prices
 
-    # Fallback: JSON in script tags (Booking.com sometimes embeds price data as JSON)
-    for pattern in (
-        r'"gross_amount_hotel_currency"\s*:\s*\{[^}]*"value"\s*:\s*([\d.]+)',
-        r'"price"\s*:\s*([\d.]+)',
-        r'"amount"\s*:\s*([\d.]+)',
-    ):
+    # Fallback: structured JSON embedded by Booking.com (most reliable across redesigns)
+    # Ordered from most to least specific to avoid false positives
+    json_patterns = [
+        # Server-side rendered price breakdown (most reliable)
+        r'"grossPrice"\s*:\s*\{"value"\s*:\s*([\d.]+)',
+        r'"priceBreakdown"\s*:\s*\{[^}]*?"value"\s*:\s*([\d.]+)',
+        r'"gross_amount_hotel_currency"\s*:\s*\{[^}]*?"value"\s*:\s*([\d.]+)',
+        r'"cheapestPriceForRoom"\s*:\s*\{[^}]*?"value"\s*:\s*([\d.]+)',
+        r'"publicPrice"\s*:\s*\{"amount"\s*:\s*([\d.]+)',
+        # Broader fallbacks — more risk of noise, so come last
+        r'"displayedPrice"\s*:\s*([\d.]+)',
+        r'"minPrice"\s*:\s*([\d.]+)',
+    ]
+    for pattern in json_patterns:
         matches = re.findall(pattern, html)
+        valid = []
         for m in matches:
             try:
                 v = float(m)
                 if _PRICE_MIN < v < _PRICE_MAX:
-                    prices.append(v)
+                    valid.append(v)
             except ValueError:
                 pass
-        if prices:
-            logger.debug("Prices found via JSON pattern '%s': %s", pattern, prices[:5])
-            return prices
+        if valid:
+            logger.debug("Prices found via JSON pattern '%s': %s", pattern, valid[:5])
+            return valid
 
     return []
 
@@ -109,6 +118,7 @@ class ScraperApiProvider(RateProvider):
             "api_key": self.api_key,
             "url": target_url,
             "render": "true",           # JavaScript rendering
+            "premium": "true",          # ScraperAPI premium proxies — better anti-bot bypass
             "country_code": "it",       # Italian IP for locale-correct prices
             "keep_headers": "true",
         }
@@ -135,10 +145,13 @@ class ScraperApiProvider(RateProvider):
 
         prices = _extract_prices_from_html(html)
         if not prices:
+            soup = BeautifulSoup(html, "html.parser")
+            title = soup.title.string.strip() if soup.title else "(no title)"
             logger.warning(
                 "ScraperApiProvider: no prices found for key=%s. "
-                "HTML length=%d. Booking.com may have returned a captcha or empty page.",
-                hotel_key, len(html),
+                "HTML length=%d, page title=%r. "
+                "If title contains 'captcha'/'robot' Booking.com blocked the request.",
+                hotel_key, len(html), title,
             )
             return []
 
