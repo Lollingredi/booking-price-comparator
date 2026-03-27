@@ -1,9 +1,9 @@
 name: Scrape Hotel Rates
 
 on:
-  # Esegue ogni 6 ore: mezzanotte, 06:00, 12:00, 18:00 UTC
+  # Esegue una volta al giorno alle 06:00 UTC (~180 crediti/mese con 3 giorni default)
   schedule:
-    - cron: "0 0,6,12,18 * * *"
+    - cron: "0 6 * * *"
   # Permette l'avvio manuale dalla tab "Actions" di GitHub
   workflow_dispatch:
     inputs:

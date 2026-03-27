@@ -12,7 +12,7 @@ from app.services.providers import RateProvider
 
 logger = logging.getLogger(__name__)
 
-RATE_FRESHNESS_SECONDS = 3600  # 1 hour
+RATE_FRESHNESS_SECONDS = 82800  # 23 ore — evita re-scraping in run manuali dello stesso giorno
 
 
 def _get_provider() -> "RateProvider | None":
