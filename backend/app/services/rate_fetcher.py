@@ -56,8 +56,15 @@ def _get_all_providers() -> list[RateProvider]:
     return providers
 
 
-# Always True — either ScraperAPI or Xotelo is available without extra deps.
-SCRAPING_AVAILABLE: bool = True
+# SCRAPING_AVAILABLE = True only in GitHub Actions (GITHUB_ACTIONS=true is set
+# automatically) or when SCRAPER_FORCE_ENABLED=true is set explicitly.
+# On Render (web server) this is False so fetch-now triggers GitHub Actions
+# instead of running ScraperAPI synchronously (which would exceed the 30s timeout).
+import os as _os
+SCRAPING_AVAILABLE: bool = (
+    _os.getenv("GITHUB_ACTIONS") == "true"
+    or _os.getenv("SCRAPER_FORCE_ENABLED") == "true"
+)
 
 
 async def is_data_fresh(db: AsyncSession, hotel_key: str, check_in: date, check_out: date) -> bool:
