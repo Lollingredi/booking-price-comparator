@@ -32,12 +32,13 @@ export default function Dashboard() {
   const { data: comparison, isLoading: loadingComparison, refetch: refetchComparison } = useComparison(checkIn, checkOut);
   const ownHotel = comparison.find((r) => r.is_own_hotel);
   const { data: history, isLoading: loadingHistory, refetch: refetchHistory } = useHistoryAll(7);
-  const { data: historyTrend, isLoading: loadingTrend } = useHistoryAll(30);
-  const { data: calendarData, isLoading: loadingCalendar } = useCalendar(30);
-  const { data: suggestions, isLoading: loadingSuggestions } = useSuggestions(14);
+  const { data: historyTrend, isLoading: loadingTrend, refetch: refetchHistoryTrend } = useHistoryAll(30);
+  const { data: calendarData, isLoading: loadingCalendar, refetch: refetchCalendar } = useCalendar(30);
+  const { data: suggestions, isLoading: loadingSuggestions, refetch: refetchSuggestions } = useSuggestions(14);
   const [chartTab, setChartTab] = useState<"ota" | "competitor">("ota");
 
   const [fetching, setFetching] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [fetchMsg, setFetchMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [workflowRunUrl, setWorkflowRunUrl] = useState<string | null>(null);
   const [countdown, setCountdown] = useState(0);
@@ -55,6 +56,26 @@ export default function Dashboard() {
     }, 1000);
     return () => clearTimeout(id);
   }, [countdown, refetchComparison, refetchHistory]);
+
+  const handleRefreshFromDb = async () => {
+    setRefreshing(true);
+    setFetchMsg(null);
+    try {
+      await Promise.all([
+        refetchComparison(),
+        refetchHistory(),
+        refetchHistoryTrend(),
+        refetchCalendar(),
+        refetchSuggestions(),
+      ]);
+      setFetchMsg({ ok: true, text: "Dati ricaricati dal database." });
+      setTimeout(() => setFetchMsg(null), 3000);
+    } catch {
+      setFetchMsg({ ok: false, text: "Errore nel ricaricare i dati." });
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   const handleFetchNow = async () => {
     setFetching(true);
@@ -190,23 +211,54 @@ export default function Dashboard() {
               </button>
             )}
             {!isDemoMode && (
-              <button
-                onClick={handleFetchNow}
-                disabled={fetching}
-                className="inline-flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-lg border border-teal-300 dark:border-teal-700 text-teal-700 dark:text-teal-400 hover:bg-teal-50 dark:hover:bg-teal-900/20 disabled:opacity-50 transition-colors"
-              >
-                {fetching ? (
-                  <>
-                    <svg className="animate-spin h-3.5 w-3.5" viewBox="0 0 24 24" fill="none">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
-                    </svg>
-                    Scraping...
-                  </>
-                ) : (
-                  "Aggiorna prezzi"
-                )}
-              </button>
+              <>
+                <button
+                  onClick={handleRefreshFromDb}
+                  disabled={refreshing || fetching}
+                  title="Ricarica i prezzi già presenti nel database senza lanciare un nuovo scrape"
+                  className="inline-flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-lg border border-gray-300 dark:border-slate-600 text-gray-600 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700/50 disabled:opacity-50 transition-colors"
+                >
+                  {refreshing ? (
+                    <>
+                      <svg className="animate-spin h-3.5 w-3.5" viewBox="0 0 24 24" fill="none">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+                      </svg>
+                      Caricamento...
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                      </svg>
+                      Ricarica dati
+                    </>
+                  )}
+                </button>
+                <button
+                  onClick={handleFetchNow}
+                  disabled={fetching || refreshing}
+                  title="Avvia un nuovo scrape su Booking.com tramite GitHub Actions"
+                  className="inline-flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-lg border border-teal-300 dark:border-teal-700 text-teal-700 dark:text-teal-400 hover:bg-teal-50 dark:hover:bg-teal-900/20 disabled:opacity-50 transition-colors"
+                >
+                  {fetching ? (
+                    <>
+                      <svg className="animate-spin h-3.5 w-3.5" viewBox="0 0 24 24" fill="none">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+                      </svg>
+                      Scraping...
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                      </svg>
+                      Aggiorna prezzi
+                    </>
+                  )}
+                </button>
+              </>
             )}
           </div>
         </div>
