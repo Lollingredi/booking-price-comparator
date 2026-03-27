@@ -23,6 +23,9 @@ NOTE — Windows / Python 3.14 compatibility
   Playwright coroutines in a *separate thread* that owns a fresh
   ProactorEventLoop, avoiding the NotImplementedError entirely.
 """
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Callable, TypeVar
 
 import asyncio
 import json
@@ -32,11 +35,6 @@ import re
 import sys
 import threading
 from pathlib import Path
-from typing import Callable, TypeVar
-
-from __future__ import annotations
-
-from typing import TYPE_CHECKING
 
 from playwright.async_api import (
     BrowserContext,
