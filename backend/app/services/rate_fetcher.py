@@ -190,9 +190,17 @@ async def fetch_all_hotels_rates(db: AsyncSession, check_in: date, check_out: da
                 )
 
     processed = 0
+    skipped = 0
     errors = 0
     prices_found = 0
     for key in all_keys:
+        if await is_data_fresh(db, key, check_in, check_out):
+            logger.info(
+                "fetch_all_hotels_rates: dati freschi per slug=%s (%s→%s) — salto.",
+                key, check_in, check_out,
+            )
+            skipped += 1
+            continue
         try:
             snaps = await fetch_and_save_rates(db, key, check_in, check_out)
             processed += 1
@@ -211,7 +219,7 @@ async def fetch_all_hotels_rates(db: AsyncSession, check_in: date, check_out: da
 
     await db.commit()
     logger.info(
-        "fetch_all_hotels_rates done: processed=%d errors=%d prices_found=%d",
-        processed, errors, prices_found,
+        "fetch_all_hotels_rates done: processed=%d skipped=%d errors=%d prices_found=%d",
+        processed, skipped, errors, prices_found,
     )
     return processed, errors, prices_found

@@ -9,6 +9,7 @@ per request).
 Set SCRAPERAPI_KEY in GitHub Secrets (and .env locally).
 Sign up free: https://www.scraperapi.com/
 """
+import asyncio
 import logging
 import re
 import urllib.parse
@@ -126,9 +127,11 @@ class ScraperApiProvider(RateProvider):
         logger.info(
             "ScraperApiProvider: fetching key=%s  %s→%s", hotel_key, check_in, check_out
         )
-        try:
-            async with httpx.AsyncClient(timeout=_TIMEOUT) as client:
-                resp = await client.get(_SCRAPER_API_URL, params=params)
+        html: str | None = None
+        for attempt in range(2):
+            try:
+                async with httpx.AsyncClient(timeout=_TIMEOUT) as client:
+                    resp = await client.get(_SCRAPER_API_URL, params=params)
                 if resp.status_code == 403:
                     logger.error(
                         "ScraperAPI returned 403 — SCRAPERAPI_KEY non valida o crediti esauriti."
@@ -137,10 +140,27 @@ class ScraperApiProvider(RateProvider):
                 if resp.status_code == 429:
                     logger.warning("ScraperAPI rate limit hit for key=%s", hotel_key)
                     return []
+                if resp.status_code == 500 and attempt == 0:
+                    logger.warning(
+                        "ScraperAPI returned 500 for key=%s (tentativo %d/2) — riprovo tra 5s.",
+                        hotel_key, attempt + 1,
+                    )
+                    await asyncio.sleep(5)
+                    continue
                 resp.raise_for_status()
                 html = resp.text
-        except httpx.HTTPError as exc:
-            logger.warning("ScraperApiProvider HTTP error for key=%s: %s", hotel_key, exc)
+                break
+            except httpx.HTTPError as exc:
+                if attempt == 0:
+                    logger.warning(
+                        "ScraperApiProvider HTTP error for key=%s (tentativo 1/2): %s — riprovo tra 5s.",
+                        hotel_key, exc,
+                    )
+                    await asyncio.sleep(5)
+                else:
+                    logger.warning("ScraperApiProvider HTTP error for key=%s: %s", hotel_key, exc)
+                    return []
+        if html is None:
             return []
 
         prices = _extract_prices_from_html(html)
