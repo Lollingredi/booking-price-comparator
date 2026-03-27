@@ -140,7 +140,7 @@ export default function CompetitorTrend({ data, isLoading }: Props) {
               contentStyle={{ borderRadius: 8, fontSize: 12 }}
             />
             <Legend wrapperStyle={{ fontSize: 11 }} />
-            {visibleHotels.map((name, i) => (
+            {visibleHotels.map((name) => (
               <Line
                 key={name}
                 type="monotone"
